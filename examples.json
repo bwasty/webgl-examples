@@ -1,0 +1,57 @@
+[
+    {
+        "target": "cornell-box",
+        "title": "Cornell Box",
+        "authors": [
+            "cgcostume",
+            "chistopher"
+        ],
+        "caption": "Progressive path tracing of the classic Cornell Box in GLSL for WebGL as well as WebGL2."
+    },
+    {
+        "target": "sky-triangle",
+        "title": "Sky Triangle",
+        "authors": [
+            "carolinfiedler",
+            "chistopher",
+            "maikz"
+        ],
+        "caption": " quick example text to build on the card title and make up the bulk of the ..."
+    },
+    {
+        "target": "camera-navigation",
+        "title": "Camera Navigation",
+        "authors": [
+            "cgcostume",
+            "sbusch42"
+        ],
+        "caption": "B Some quick example text to build on the card title and make up the bulk of the ..."
+    },
+    {
+        "target": "openll-showcase",
+        "title": "OpenLL Showcase",
+        "authors": [
+            "anne-gropler",
+            "bwasty",
+            "cgcostume"
+        ],
+        "caption": "C Some quick example text to build on the card title and make up the bulk of the ..."
+    },
+    {
+        "target": "cubescape",
+        "title": "Cube aber auch Scape",
+        "authors": [
+            "cgcostume",
+            "chistopher"
+        ],
+        "caption": "D Some quick example text to build on the card title and make up the bulk of the ..."
+    },
+    {
+        "target": "gltf",
+        "title": "glTF 2.0",
+        "authors": [
+            "bwasty"
+        ],
+        "caption": "glTF 2.0 example with PBR shading"
+    }
+]
