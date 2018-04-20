@@ -4,6 +4,18 @@ import * as gloperate from 'webgl-operate';
 
 import { GltfRenderer } from './gltfrenderer';
 
+import { GltfLoader } from 'gltf-loader-ts';
+
+async function loadGltf(renderer: GltfRenderer) {
+    const loader = new GltfLoader();
+    const uri = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/' +
+        'BoxTextured/glTF/BoxTextured.gltf';
+    const asset = await loader.load(uri);
+    await asset.fetchAll();
+    console.log('loaded ' + uri, asset);
+    (window as any)['asset'] = asset;
+}
+
 
 function onload() {
     const canvas = new gloperate.Canvas('example-canvas');
@@ -12,6 +24,8 @@ function onload() {
     canvas.renderer = renderer;
     canvas.element.addEventListener('click', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
+
+    loadGltf(renderer);
 
     // export variables
     (window as any)['canvas'] = canvas;
