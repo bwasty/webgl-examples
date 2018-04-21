@@ -132,18 +132,18 @@ export class Primitive extends Geometry {
         const positionAccessor = this.getAccessor(gltf, gPrimitive.attributes.POSITION);
         // TODO!: (cast) When not defined, accessor must be initialized with zeros;
         // sparse property or extensions could override zeros with actual values.
-        const bufferData = await asset.bufferViewData(positionAccessor.bufferView as number);
-        const buffer = new Buffer(this.context); // TODO!? identifier
-        buffer.initialize();
-        buffer.data(bufferData, gl.STATIC_DRAW);
-        this._buffers.push(buffer);
+        const positionBufferData = await asset.bufferViewData(positionAccessor.bufferView as number);
+        const vertexBuffer = new Buffer(this.context); // TODO!? identifier
+        // vertexBuffer.data(positionBufferData, gl.STATIC_DRAW);
+        this._buffers.push(vertexBuffer);
         this.numVertices = positionAccessor.count;
         this.positionAttribData = AttribData.fromGltf(positionAccessor,
             gltf.bufferViews[positionAccessor.bufferView as number]);
 
-        // TODO!: does this happen? (multiple vertex attrib buffers for one primitive)
+        // TODO!!!: does this happen? YES (multiple vertex attrib buffers for one primitive)
         for (const attr in gPrimitive.attributes) {
-            if (gltf.accessors && gltf.accessors[gPrimitive.attributes[attr]] !== positionAccessor) {
+            if (gltf.accessors && gltf.accessors[gPrimitive.attributes[attr]].bufferView !==
+                positionAccessor.bufferView) {
                 throw new Error('unsupported: multiple vertex attrib bufferViews per primitive');
             }
         }
@@ -158,21 +158,26 @@ export class Primitive extends Geometry {
             // sparse property or extensions could override zeros with actual values.
             const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView as number);
             const indexBuffer = new Buffer(this.context); // TODO!? identifier
-            indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
             this._buffers.push(indexBuffer);
             this.numIndices = indexAccessor.count;
 
             const valid = super.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
 
-            auxiliaries.assert(this._buffers[0] !== undefined && this._buffers[0].object instanceof WebGLBuffer,
+            indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
+
+            auxiliaries.assert(this._buffers[INDEX_BUFFER] !== undefined &&
+                this._buffers[INDEX_BUFFER].object instanceof WebGLBuffer,
                 `expected valid WebGLBuffer`);
         } else {
             const valid = super.initialize([gl.ARRAY_BUFFER], [aVertex, 8]);
         }
 
+        vertexBuffer.data(positionBufferData, gl.STATIC_DRAW);
+
         // TODO!: do something with valid??
 
-        auxiliaries.assert(this._buffers[1] !== undefined && this._buffers[1].object instanceof WebGLBuffer,
+        auxiliaries.assert(this._buffers[VERTEX_BUFFER] !== undefined &&
+            this._buffers[VERTEX_BUFFER].object instanceof WebGLBuffer,
             `expected valid WebGLBuffer`);
     }
 
