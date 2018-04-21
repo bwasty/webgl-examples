@@ -9,7 +9,8 @@ import { Primitive } from './primitive';
 async function loadGltf(renderer: GltfRenderer) {
     const loader = new GltfLoader();
     const uri = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/' +
-        'BoxTextured/glTF/BoxTextured.gltf';
+        // 'BoxTextured/glTF/BoxTextured.gltf';
+        'Box/glTF/Box.gltf';
     const asset = await loader.load(uri);
     await asset.preFetchAll();
     console.log('loaded ' + uri, asset);
