@@ -134,6 +134,7 @@ export class Primitive extends Geometry {
         // sparse property or extensions could override zeros with actual values.
         const bufferData = await asset.bufferViewData(positionAccessor.bufferView as number);
         const buffer = new Buffer(this.context); // TODO!? identifier
+        buffer.initialize();
         buffer.data(bufferData, gl.STATIC_DRAW);
         this._buffers.push(buffer);
         this.numVertices = positionAccessor.count;
