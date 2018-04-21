@@ -2,7 +2,9 @@ import { auxiliaries, Buffer, Context, Geometry } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { GltfAsset } from 'gltf-loader-ts';
-import { gltf } from 'gltf-loader-ts';
+import { gltf as GLTF } from 'gltf-loader-ts';
+
+// tslint:disable:max-classes-per-file
 
 // TODO!!: move to gltf-loader-ts? GltfUtils?
 /** Spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size */
@@ -27,7 +29,7 @@ const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
 };
 
 /** Byte size per element, as needed for example for `gl.vertexAttribPointer` */
-function accessorElementSize(accessor: gltf.Accessor) {
+function accessorElementSize(accessor: GLTF.Accessor) {
     return WEBGL_BYTES_PER_COMPONENT_TYPE[accessor.componentType] *
         GLTF_ELEMENTS_PER_TYPE[accessor.type];
 }
@@ -36,10 +38,33 @@ function accessorElementSize(accessor: gltf.Accessor) {
 const VERTEX_BUFFER = 0;
 const INDEX_BUFFER = 1;
 
+/** Data needed for `gl.vertexAttribPointer` */
+class AttribData {
+    static fromGltf(accessor: GLTF.Accessor, bufferView: GLTF.BufferView): AttribData {
+        return new AttribData (
+            accessorElementSize(accessor),
+            accessor.componentType,
+            accessor.normalized || false,
+            bufferView.byteStride || 0,
+            bufferView.byteOffset || 0,
+        );
+    }
+
+    constructor(
+        public size: GLint,
+        public type: GLenum,
+        public normalized: boolean,
+        public stride: GLsizei,
+        public offset: GLintptr,
+    ) {}
+}
+
 export class Primitive extends Geometry {
-    private gPrimitive: gltf.MeshPrimitive;
-    private gVertexBufferView: gltf.BufferView;
-    private gIndexBufferView: gltf.BufferView; // TODO!: obsolete?
+    /** POINTS / LINES / TRIANGLES etc. */
+    private mode: GLenum;
+    private positionAttribData: AttribData;
+    // TODO!!: normals, tangents, texcoords, vertex colors, joints, weights
+
     private numVertices: number;
     private numIndices: number;
 
@@ -47,21 +72,21 @@ export class Primitive extends Geometry {
         super(context, identifier);
     }
 
-    private getAccessor(gltf: gltf.GlTf, accessorId: gltf.GlTfId): gltf.Accessor {
+    private getAccessor(gltf: GLTF.GlTf, accessorId: GLTF.GlTfId): GLTF.Accessor {
         if (gltf.accessors === undefined) { throw new Error('invalid gltf'); }
         const acc = gltf.accessors[accessorId];
         if (!!acc.sparse) { throw new Error('sparse accessors not implemented yet'); }
         return acc;
     }
 
-    private bindAttrib(index: number, accessor: gltf.Accessor, bufferView: gltf.BufferView) {
+    private bindAttrib(index: number, attribData: AttribData) {
         this._buffers[VERTEX_BUFFER].attribEnable(
             index,
-            accessorElementSize(accessor),
-            accessor.componentType,
-            accessor.normalized || false,
-            bufferView.byteStride,
-            bufferView.byteOffset,
+            attribData.size,
+            attribData.type,
+            attribData.normalized,
+            attribData.stride,
+            attribData.offset,
             false,
             false,
         );
@@ -69,17 +94,35 @@ export class Primitive extends Geometry {
 
     protected bindBuffers(indices: number[]): void {
         this._buffers[VERTEX_BUFFER].bind();
-        // TODO!!!
-        this.bindAttrib(indices[0], accessor, this.gVertexBufferView);
+        this.bindAttrib(indices[0], this.positionAttribData);
+
         this._buffers[INDEX_BUFFER].bind(); // indices
     }
+
     protected unbindBuffers(indices: number[]): void {
         this._buffers[VERTEX_BUFFER].attribDisable(indices[0], false, false); // TODO!?
         this._buffers[INDEX_BUFFER].unbind();
     }
 
-    async setFromGltf(gPrimitive: gltf.MeshPrimitive, asset: GltfAsset) {
-        this.gPrimitive = gPrimitive;
+    public initialize(...args: any[]): boolean {
+        const valid = super.initialize(...args);
+        if (valid) {
+            const gl = this.context.gl;
+            if (this.numIndices) {
+                this.draw = function() {
+                    gl.drawElements(this.mode, this.numIndices, gl.UNSIGNED_BYTE, 0);
+                };
+            } else {
+                this.draw = function() {
+                    gl.drawArrays(this.mode, 0, this.numVertices);
+                };
+            }
+        }
+        return valid;
+    }
+
+    async setFromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset) {
+        this.mode = gPrimitive.mode || 4; // TRIANGLES (= default in spec)
 
         const gl = this.context.gl;
         const gltf = asset.gltf;
@@ -94,7 +137,8 @@ export class Primitive extends Geometry {
         buffer.data(bufferData, gl.STATIC_DRAW);
         this._buffers.push(buffer);
         this.numVertices = positionAccessor.count;
-        this.gVertexBufferView = gltf.bufferViews[positionAccessor.bufferView as number];
+        this.positionAttribData = AttribData.fromGltf(positionAccessor,
+            gltf.bufferViews[positionAccessor.bufferView as number]);
 
         // TODO!: does this happen? (multiple vertex attrib buffers for one primitive)
         for (const attr in gPrimitive.attributes) {
@@ -116,7 +160,6 @@ export class Primitive extends Geometry {
             indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
             this._buffers.push(indexBuffer);
             this.numIndices = indexAccessor.count;
-            this.gIndexBufferView = gltf.bufferViews[indexAccessor.bufferView as number];
 
             const valid = super.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
 
@@ -126,21 +169,13 @@ export class Primitive extends Geometry {
             const valid = super.initialize([gl.ARRAY_BUFFER], [aVertex, 8]);
         }
 
+        // TODO!: do something with valid??
+
         auxiliaries.assert(this._buffers[1] !== undefined && this._buffers[1].object instanceof WebGLBuffer,
             `expected valid WebGLBuffer`);
     }
 
     draw(): void {
-        const gl = this.context.gl;
-        const mode = this.gPrimitive.mode;
-        if (this.hasIndices) {
-            gl.drawElements(mode, this.numIndices, gl.UNSIGNED_BYTE, 0);
-        } else {
-            gl.drawArrays(mode, 0, this.numVertices);
-        }
-    }
-
-    get hasIndices(): boolean {
-        return this.gPrimitive.indices !== undefined;
+        // overriden with optimized version in `initialize`
     }
 }
