@@ -1,10 +1,9 @@
-
-
+import { GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
 import { GltfRenderer } from './gltfrenderer';
+import { Primitive } from './primitive';
 
-import { GltfLoader } from 'gltf-loader-ts';
 
 async function loadGltf(renderer: GltfRenderer) {
     const loader = new GltfLoader();
