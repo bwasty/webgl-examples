@@ -67,6 +67,7 @@ export class Primitive extends Geometry {
 
     private numVertices: number;
     private numIndices: number;
+    private indexType: GLenum;
 
     constructor(context: Context, identifier?: string | undefined) {
         super(context, identifier);
@@ -110,7 +111,7 @@ export class Primitive extends Geometry {
             const gl = this.context.gl;
             if (this.numIndices) {
                 this.draw = function() {
-                    gl.drawElements(this.mode, this.numIndices, gl.UNSIGNED_BYTE, 0);
+                    gl.drawElements(this.mode, this.numIndices, this.indexType, 0);
                 };
             } else {
                 this.draw = function() {
@@ -160,6 +161,11 @@ export class Primitive extends Geometry {
             const indexBuffer = new Buffer(this.context); // TODO!? identifier
             this._buffers.push(indexBuffer);
             this.numIndices = indexAccessor.count;
+            this.indexType = indexAccessor.componentType;
+            if (this.indexType === gl.UNSIGNED_INT) {
+                // TODO!!: make sure OES_element_index_uint is active
+                throw new Error('not yet supported: UNSIGNED_INT indices');
+            }
 
             const valid = super.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
 
