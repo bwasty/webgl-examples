@@ -97,7 +97,9 @@ export class Primitive extends Geometry {
         this._buffers[VERTEX_BUFFER].bind();
         this.bindAttrib(indices[0], this.positionAttribData);
 
-        this._buffers[INDEX_BUFFER].bind(); // indices
+        if (this.numIndices) {
+            this._buffers[INDEX_BUFFER].bind();
+        }
     }
 
     protected unbindBuffers(indices: number[]): void {
@@ -135,7 +137,6 @@ export class Primitive extends Geometry {
         // sparse property or extensions could override zeros with actual values.
         const positionBufferData = await asset.bufferViewData(positionAccessor.bufferView as number);
         const vertexBuffer = new Buffer(this.context); // TODO!? identifier
-        // vertexBuffer.data(positionBufferData, gl.STATIC_DRAW);
         this._buffers.push(vertexBuffer);
         this.numVertices = positionAccessor.count;
         this.positionAttribData = AttribData.fromGltf(positionAccessor,
@@ -167,6 +168,7 @@ export class Primitive extends Geometry {
                 throw new Error('not yet supported: UNSIGNED_INT indices');
             }
 
+            // TODO!!!: supposed to be called from this.initialize...
             const valid = super.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
 
             indexBuffer.data(indexBufferData, gl.STATIC_DRAW);

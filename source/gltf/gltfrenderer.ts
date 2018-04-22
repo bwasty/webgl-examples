@@ -1,7 +1,6 @@
+import { vec3 } from 'gl-matrix';
 import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Program, Renderer, Shader } from 'webgl-operate';
 import { Primitive } from './primitive';
-import { vec3 } from 'gl-matrix';
-
 
 export class GltfRenderer extends Renderer {
     private _program: Program;
@@ -45,20 +44,53 @@ export class GltfRenderer extends Renderer {
         this._navigation = new Navigation(callback, mouseEventProvider);
         this._navigation.camera = this._camera;
 
+        setTimeout(() => {
+            this.clearColor = [0.0, 0.0, 1.0, 1.0];
+        }, 0);
+
         return true;
     }
     protected onUninitialize(): void {
         this._program.uninitialize();
     }
     protected onUpdate(): boolean {
-        console.error('Method not implemented.');
-        return false; // whether to redraw
+        // Resize
+        if (this._altered.frameSize) {
+            this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
+        }
+        if (this._altered.canvasSize) {
+            this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
+        }
+
+        // Update clear color
+        if (this._altered.clearColor) {
+            const c = this._clearColor;
+            this.context.gl.clearColor(c[0], c[1], c[2], c[3]);
+        }
+
+        this._navigation.update();
+
+        // Reset state
+        const altered = this._altered.any || this._camera.altered;
+        this._altered.reset();
+        this._camera.altered = false;
+
+        // If anything has changed, render a new frame
+        return altered;
     }
     protected onPrepare(): void { }
     protected onFrame(frameNumber: number): void {
-        console.error('Method not implemented.');
+        const gl = this._context.gl;
+
+        // Set viewport
+        gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
+
+        if (this.primitive) {
+            this.primitive.bind();
+            this.primitive.draw();
+        }
     }
     protected onSwap(): void {
-        console.error('Method not implemented.');
+        // TODO!!: this.invalidate()? why?
     }
 }
