@@ -42,7 +42,7 @@ const INDEX_BUFFER = 1;
 class AttribData {
     static fromGltf(accessor: GLTF.Accessor, bufferView: GLTF.BufferView): AttribData {
         return new AttribData (
-            accessorElementSize(accessor),
+            GLTF_ELEMENTS_PER_TYPE[accessor.type],
             accessor.componentType,
             accessor.normalized || false,
             bufferView.byteStride || 0,
@@ -168,8 +168,7 @@ export class Primitive extends Geometry {
                 throw new Error('not yet supported: UNSIGNED_INT indices');
             }
 
-            // TODO!!!: supposed to be called from this.initialize...
-            const valid = super.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
+            const valid = this.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
 
             indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
 
@@ -177,7 +176,7 @@ export class Primitive extends Geometry {
                 this._buffers[INDEX_BUFFER].object instanceof WebGLBuffer,
                 `expected valid WebGLBuffer`);
         } else {
-            const valid = super.initialize([gl.ARRAY_BUFFER], [aVertex, 8]);
+            const valid = this.initialize([gl.ARRAY_BUFFER], [aVertex, 8]);
         }
 
         vertexBuffer.data(positionBufferData, gl.STATIC_DRAW);
