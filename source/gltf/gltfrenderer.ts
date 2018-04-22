@@ -1,7 +1,8 @@
 import { vec3 } from 'gl-matrix';
 import { BlitPass, Camera, Context, DefaultFramebuffer,
     Framebuffer, Invalidate, MouseEventProvider, Navigation, Program,
-    Renderbuffer, Renderer, Shader, Texture2 } from 'webgl-operate';
+    Renderbuffer, Renderer, Shader, Texture2, TextureCube, Wizard } from 'webgl-operate';
+import { Skybox } from '../camera-navigation/skybox';
 import { Primitive } from './primitive';
 
 export class GltfRenderer extends Renderer {
@@ -20,6 +21,11 @@ export class GltfRenderer extends Renderer {
     // Camera and navigation
     protected _camera: Camera;
     protected _navigation: Navigation;
+
+    // SkyBox
+    protected _cubeMap: TextureCube;
+    protected _skyBox: Skybox;
+    protected _cubeMapChanged: boolean;
 
     public primitive: Primitive;
 
@@ -72,6 +78,21 @@ export class GltfRenderer extends Renderer {
         this._blit.drawBuffer = gl.BACK;
         this._blit.target = this._defaultFBO;
 
+        // Initialize skyBox
+
+        const internalFormatAndType = Wizard.queryInternalTextureFormat(this._context, gl.RGB, 'byte');
+        this._cubeMap = new TextureCube(this._context);
+        this._cubeMap.initialize(512, internalFormatAndType[0], gl.RGB, internalFormatAndType[1]);
+
+        this._skyBox = new Skybox();
+        this._skyBox.initialize(this._context, this._camera, this._cubeMap);
+
+        this._cubeMap.load({
+            positiveX: 'data/skybox.px.png', negativeX: 'data/skybox.nx.png',
+            positiveY: 'data/skybox.py.png', negativeY: 'data/skybox.ny.png',
+            positiveZ: 'data/skybox.pz.png', negativeZ: 'data/skybox.nz.png',
+        }).then(() => this.invalidate(true));
+
         setTimeout(() => {
             this.clearColor = [0.0, 0.0, 1.0, 1.0];
         }, 0);
@@ -88,6 +109,8 @@ export class GltfRenderer extends Renderer {
         this._colorRenderTexture.uninitialize();
         this._depthRenderbuffer.uninitialize();
         this._blit.uninitialize();
+
+        this._skyBox.uninitialize();
     }
 
     protected onUpdate(): boolean {
@@ -109,9 +132,10 @@ export class GltfRenderer extends Renderer {
         this._navigation.update();
 
         // Reset state
-        const altered = this._altered.any || this._camera.altered;
+        const altered = this._altered.any || this._camera.altered || this._cubeMapChanged;
         this._altered.reset();
         this._camera.altered = false;
+        this._cubeMapChanged = false;
 
         // If anything has changed, render a new frame
         return altered;
@@ -139,6 +163,9 @@ export class GltfRenderer extends Renderer {
         }
 
         this._program.unbind();
+
+        // Render skybox
+        this._skyBox.frame();
 
         // Unbind FBO
         this._intermediateFBO.unbind();
