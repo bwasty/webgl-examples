@@ -28,15 +28,26 @@ const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
     MAT4:  16,
 };
 
-/** Byte size per element, as needed for example for `gl.vertexAttribPointer` */
+// /** Byte size per element, as needed for example for `gl.vertexAttribPointer` */
 function accessorElementSize(accessor: GLTF.Accessor) {
     return WEBGL_BYTES_PER_COMPONENT_TYPE[accessor.componentType] *
         GLTF_ELEMENTS_PER_TYPE[accessor.type];
 }
 
+/** Standard vertex attrib locations for all semantics in the spec */
+const ATTRIB_LOCATIONS: { [semantic: string]: number } = {
+    POSITION: 0,
+    NORMAL: 1,
+    TANGENT: 2,
+    TEXCOORD_0: 3,
+    TEXCOORD_1: 4,
+    COLOR_0: 5,
+    JOINTS_0: 6,
+    WEIGHTS_0: 7,
+};
+
 // indices for Geometry._buffers
-const VERTEX_BUFFER = 0;
-const INDEX_BUFFER = 1;
+const INDEX_BUFFER = 0;
 
 /** Data needed for `gl.vertexAttribPointer` */
 class VertexAttribute {
@@ -60,7 +71,7 @@ class VertexAttribute {
         private offset: GLintptr,
     ) {}
 
-    enable(index: number) {
+    enable(index: GLuint) {
         this.buffer.attribEnable(
             index,
             this.size,
@@ -73,7 +84,7 @@ class VertexAttribute {
         );
     }
 
-    disable(index: number) {
+    disable(index: GLuint) {
         this.buffer.attribDisable(index, true, true); // TODO!: param?
     }
 }
@@ -82,7 +93,8 @@ export class Primitive extends Geometry {
     /** POINTS / LINES / TRIANGLES etc. */
     private mode: GLenum;
     /** Vertex attributes. Keys match the attribute semantic property names from glTF. */
-    private attributes: { [semantic: string]: VertexAttribute };
+    // TODO!!: uninitialization of attributes
+    private attributes: { [semantic: string]: VertexAttribute } = {};
 
     private numVertices: number;
     private numIndices: number;
@@ -100,12 +112,14 @@ export class Primitive extends Geometry {
     }
 
     protected bindBuffers(indices: number[]): void {
-        // this._buffers[VERTEX_BUFFER].bind();
-        // this.bindAttrib(indices[0], this.positionAttribData);
-
-        // for (const semantic in this.attributes) {
-
-        // }
+        // TODO!!!: WebGL1 support (location lookup)... also in unbind...
+        for (const semantic in this.attributes) {
+            const location = ATTRIB_LOCATIONS[semantic];
+            if (location === undefined) {
+                continue;
+            }
+            this.attributes[semantic].enable(location);
+        }
 
         if (this.numIndices) {
             this._buffers[INDEX_BUFFER].bind();
@@ -113,7 +127,13 @@ export class Primitive extends Geometry {
     }
 
     protected unbindBuffers(indices: number[]): void {
-        // this._buffers[VERTEX_BUFFER].attribDisable(indices[0], false, false); // TODO!?
+        for (const semantic in this.attributes) {
+            const location = ATTRIB_LOCATIONS[semantic];
+            if (location === undefined) {
+                continue;
+            }
+            this.attributes[semantic].disable(location);
+        }
         this._buffers[INDEX_BUFFER].unbind();
     }
 
@@ -145,6 +165,7 @@ export class Primitive extends Geometry {
         const buffersByView: {[bufferView: number]: Buffer} = {};
         for (const semantic in gPrimitive.attributes) {
             const accessor = this.getAccessor(gltf, gPrimitive.attributes[semantic]);
+            this.numVertices = accessor.count;
             const bufferViewIndex = accessor.bufferView as number; // TODO!: cast...
 
             let buffer;
@@ -163,9 +184,7 @@ export class Primitive extends Geometry {
 
         // TODO!!: bounds...
 
-        const aVertex = 0; // TODO!!!
-
-        if (gPrimitive.indices) {
+        if (gPrimitive.indices !== undefined) {
             const indexAccessor = this.getAccessor(gltf, gPrimitive.indices);
             // TODO!: (cast) When not defined, accessor must be initialized with zeros;
             // sparse property or extensions could override zeros with actual values.
@@ -179,7 +198,7 @@ export class Primitive extends Geometry {
                 throw new Error('not yet supported: UNSIGNED_INT indices');
             }
 
-            const valid = this.initialize([gl.ARRAY_BUFFER, gl.ELEMENT_ARRAY_BUFFER], [aVertex, 8]);
+            const valid = this.initialize([gl.ELEMENT_ARRAY_BUFFER], [8]);
 
             indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
 
@@ -187,15 +206,10 @@ export class Primitive extends Geometry {
                 this._buffers[INDEX_BUFFER].object instanceof WebGLBuffer,
                 `expected valid WebGLBuffer`);
         } else {
-            const valid = this.initialize([gl.ARRAY_BUFFER], [aVertex, 8]);
+            const valid = this.initialize();
         }
 
-
-        // TODO!: do something with valid??
-
-        auxiliaries.assert(this._buffers[VERTEX_BUFFER] !== undefined &&
-            this._buffers[VERTEX_BUFFER].object instanceof WebGLBuffer,
-            `expected valid WebGLBuffer`);
+        // TODO!!: do something with valid??
     }
 
     draw(): void {

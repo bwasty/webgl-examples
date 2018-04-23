@@ -9,8 +9,8 @@ import { Primitive } from './primitive';
 async function loadGltf(renderer: GltfRenderer) {
     const loader = new GltfLoader();
     const uri = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/' +
-        // 'BoxTextured/glTF/BoxTextured.gltf';
-        'Box/glTF/Box.gltf';
+        'BoxTextured/glTF/BoxTextured.gltf';
+        // 'Box/glTF/Box.gltf';
     const asset = await loader.load(uri);
     await asset.preFetchAll();
     console.log('loaded ' + uri, asset);
@@ -33,7 +33,7 @@ async function onload() {
     primitive.setFromGltf(gPrimitive, asset);
     renderer.primitive = primitive;
 
-    canvas.element.addEventListener('click', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
+    canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
 
 
