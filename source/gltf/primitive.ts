@@ -3,6 +3,7 @@ const assert = auxiliaries.assert;
 
 import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
+import { Material } from './material';
 // import { Bindable } from 'webgl-operate/lib/bindable';
 // import { Initializable } from 'webgl-operate/lib/initializable';
 
@@ -104,6 +105,8 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
     /** POINTS / LINES / TRIANGLES etc. */
     private mode: GLenum;
+
+    private material: Material;
 
     constructor(context: Context, identifier?: string | undefined) {
         // super();
