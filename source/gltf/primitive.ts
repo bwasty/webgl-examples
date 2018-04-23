@@ -1,8 +1,10 @@
-import { auxiliaries, Buffer, Context, Geometry } from 'webgl-operate';
+import { auxiliaries, Buffer, Context, Geometry, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
+// import { Bindable } from 'webgl-operate/lib/bindable';
+// import { Initializable } from 'webgl-operate/lib/initializable';
 
 // tslint:disable:max-classes-per-file
 
@@ -63,7 +65,7 @@ class VertexAttribute {
     }
 
     constructor(
-        private buffer: Buffer,
+        public buffer: Buffer,
         private size: GLint,
         private type: GLenum,
         private normalized: boolean,
@@ -89,19 +91,25 @@ class VertexAttribute {
     }
 }
 
-export class Primitive extends Geometry {
-    /** POINTS / LINES / TRIANGLES etc. */
-    private mode: GLenum;
+// TODO!!: Initializable, Bindable not exported...
+export class Primitive /*extends Initializable implements Bindable*/ {
+    private vertexArray: VertexArray;
     /** Vertex attributes. Keys match the attribute semantic property names from glTF. */
-    // TODO!!: uninitialization of attributes
     private attributes: { [semantic: string]: VertexAttribute } = {};
-
     private numVertices: number;
+
+    private indexBuffer: Buffer;
     private numIndices: number;
     private indexType: GLenum;
 
+    /** POINTS / LINES / TRIANGLES etc. */
+    private mode: GLenum;
+
     constructor(context: Context, identifier?: string | undefined) {
-        super(context, identifier);
+        // super();
+
+        identifier = identifier !== undefined && identifier !== `` ? identifier : this.constructor.name;
+        this.vertexArray = new VertexArray(context, identifier + 'VAO');
     }
 
     private getAccessor(gltf: GLTF.GlTf, accessorId: GLTF.GlTfId): GLTF.Accessor {
@@ -111,7 +119,7 @@ export class Primitive extends Geometry {
         return acc;
     }
 
-    protected bindBuffers(indices: number[]): void {
+    protected bindBuffers(): void {
         // TODO!!!: WebGL1 support (location lookup)... also in unbind...
         for (const semantic in this.attributes) {
             const location = ATTRIB_LOCATIONS[semantic];
@@ -122,11 +130,11 @@ export class Primitive extends Geometry {
         }
 
         if (this.numIndices) {
-            this._buffers[INDEX_BUFFER].bind();
+            this.indexBuffer.bind();
         }
     }
 
-    protected unbindBuffers(indices: number[]): void {
+    protected unbindBuffers(): void {
         for (const semantic in this.attributes) {
             const location = ATTRIB_LOCATIONS[semantic];
             if (location === undefined) {
@@ -134,24 +142,38 @@ export class Primitive extends Geometry {
             }
             this.attributes[semantic].disable(location);
         }
-        this._buffers[INDEX_BUFFER].unbind();
+        this.indexBuffer.unbind();
+    }
+
+    bind(target?: number | undefined): void {
+        this.vertexArray.bind();
+    }
+    unbind(target?: number | undefined): void {
+        this.vertexArray.unbind();
     }
 
     public initialize(...args: any[]): boolean {
-        const valid = super.initialize(...args);
-        if (valid) {
-            const gl = this.context.gl;
-            if (this.numIndices) {
-                this.draw = function() {
-                    gl.drawElements(this.mode, this.numIndices, this.indexType, 0);
-                };
-            } else {
-                this.draw = function() {
-                    gl.drawArrays(this.mode, 0, this.numVertices);
-                };
-            }
+        const gl = this.context.gl;
+        if (this.numIndices) {
+            this.draw = function() {
+                gl.drawElements(this.mode, this.numIndices, this.indexType, 0);
+            };
+        } else {
+            this.draw = function() {
+                gl.drawArrays(this.mode, 0, this.numVertices);
+            };
         }
-        return valid;
+
+        this.vertexArray.initialize(() => this.bindBuffers(), () => this.unbindBuffers());
+        return this.vertexArray.valid;
+    }
+
+    uninitialize(): void {
+        this.vertexArray.uninitialize();
+        for (const semantic in this.attributes) {
+            this.attributes[semantic].buffer.uninitialize();
+        }
+        this.indexBuffer.uninitialize();
     }
 
     async setFromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset) {
@@ -189,8 +211,7 @@ export class Primitive extends Geometry {
             // TODO!: (cast) When not defined, accessor must be initialized with zeros;
             // sparse property or extensions could override zeros with actual values.
             const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView as number);
-            const indexBuffer = new Buffer(this.context); // TODO!? identifier
-            this._buffers.push(indexBuffer);
+            this.indexBuffer = new Buffer(this.context); // TODO!? identifier
             this.numIndices = indexAccessor.count;
             this.indexType = indexAccessor.componentType;
             if (this.indexType === gl.UNSIGNED_INT) {
@@ -198,21 +219,25 @@ export class Primitive extends Geometry {
                 throw new Error('not yet supported: UNSIGNED_INT indices');
             }
 
-            const valid = this.initialize([gl.ELEMENT_ARRAY_BUFFER], [8]);
+            this.indexBuffer.initialize(gl.ELEMENT_ARRAY_BUFFER);
+            this.indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
 
-            indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
-
-            auxiliaries.assert(this._buffers[INDEX_BUFFER] !== undefined &&
-                this._buffers[INDEX_BUFFER].object instanceof WebGLBuffer,
+            auxiliaries.assert(this.indexBuffer !== undefined &&
+                this.indexBuffer.object instanceof WebGLBuffer,
                 `expected valid WebGLBuffer`);
         } else {
             const valid = this.initialize();
         }
 
+        this.initialize();
         // TODO!!: do something with valid??
     }
 
     draw(): void {
         // overriden with optimized version in `initialize`
+    }
+
+    get context(): Context {
+        return this.vertexArray.context;
     }
 }
