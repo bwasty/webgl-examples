@@ -39,9 +39,10 @@ const VERTEX_BUFFER = 0;
 const INDEX_BUFFER = 1;
 
 /** Data needed for `gl.vertexAttribPointer` */
-class AttribData {
-    static fromGltf(accessor: GLTF.Accessor, bufferView: GLTF.BufferView): AttribData {
-        return new AttribData (
+class VertexAttribute {
+    static fromGltf(accessor: GLTF.Accessor, bufferView: GLTF.BufferView, buffer: Buffer) {
+        return new VertexAttribute(
+            buffer,
             GLTF_ELEMENTS_PER_TYPE[accessor.type],
             accessor.componentType,
             accessor.normalized || false,
@@ -51,19 +52,37 @@ class AttribData {
     }
 
     constructor(
-        public size: GLint,
-        public type: GLenum,
-        public normalized: boolean,
-        public stride: GLsizei,
-        public offset: GLintptr,
+        private buffer: Buffer,
+        private size: GLint,
+        private type: GLenum,
+        private normalized: boolean,
+        private stride: GLsizei,
+        private offset: GLintptr,
     ) {}
+
+    enable(index: number) {
+        this.buffer.attribEnable(
+            index,
+            this.size,
+            this.type,
+            this.normalized,
+            this.stride,
+            this.offset,
+            true, // TODO!: param?
+            false,
+        );
+    }
+
+    disable(index: number) {
+        this.buffer.attribDisable(index, true, true); // TODO!: param?
+    }
 }
 
 export class Primitive extends Geometry {
     /** POINTS / LINES / TRIANGLES etc. */
     private mode: GLenum;
-    private positionAttribData: AttribData;
-    // TODO!!: normals, tangents, texcoords, vertex colors, joints, weights
+    /** Vertex attributes. Keys match the attribute semantic property names from glTF. */
+    private attributes: { [semantic: string]: VertexAttribute };
 
     private numVertices: number;
     private numIndices: number;
@@ -80,22 +99,13 @@ export class Primitive extends Geometry {
         return acc;
     }
 
-    private bindAttrib(index: number, attribData: AttribData) {
-        this._buffers[VERTEX_BUFFER].attribEnable(
-            index,
-            attribData.size,
-            attribData.type,
-            attribData.normalized,
-            attribData.stride,
-            attribData.offset,
-            false,
-            false,
-        );
-    }
-
     protected bindBuffers(indices: number[]): void {
-        this._buffers[VERTEX_BUFFER].bind();
-        this.bindAttrib(indices[0], this.positionAttribData);
+        // this._buffers[VERTEX_BUFFER].bind();
+        // this.bindAttrib(indices[0], this.positionAttribData);
+
+        // for (const semantic in this.attributes) {
+
+        // }
 
         if (this.numIndices) {
             this._buffers[INDEX_BUFFER].bind();
@@ -103,7 +113,7 @@ export class Primitive extends Geometry {
     }
 
     protected unbindBuffers(indices: number[]): void {
-        this._buffers[VERTEX_BUFFER].attribDisable(indices[0], false, false); // TODO!?
+        // this._buffers[VERTEX_BUFFER].attribDisable(indices[0], false, false); // TODO!?
         this._buffers[INDEX_BUFFER].unbind();
     }
 
@@ -132,22 +142,23 @@ export class Primitive extends Geometry {
         assert(!!gPrimitive.attributes.POSITION, 'primitives must have the POSITION attribute');
         if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
 
-        const positionAccessor = this.getAccessor(gltf, gPrimitive.attributes.POSITION);
-        // TODO!: (cast) When not defined, accessor must be initialized with zeros;
-        // sparse property or extensions could override zeros with actual values.
-        const positionBufferData = await asset.bufferViewData(positionAccessor.bufferView as number);
-        const vertexBuffer = new Buffer(this.context); // TODO!? identifier
-        this._buffers.push(vertexBuffer);
-        this.numVertices = positionAccessor.count;
-        this.positionAttribData = AttribData.fromGltf(positionAccessor,
-            gltf.bufferViews[positionAccessor.bufferView as number]);
+        const buffersByView: {[bufferView: number]: Buffer} = {};
+        for (const semantic in gPrimitive.attributes) {
+            const accessor = this.getAccessor(gltf, gPrimitive.attributes[semantic]);
+            const bufferViewIndex = accessor.bufferView as number; // TODO!: cast...
 
-        // TODO!!!: does this happen? YES (multiple vertex attrib buffers for one primitive)
-        for (const attr in gPrimitive.attributes) {
-            if (gltf.accessors && gltf.accessors[gPrimitive.attributes[attr]].bufferView !==
-                positionAccessor.bufferView) {
-                throw new Error('unsupported: multiple vertex attrib bufferViews per primitive');
+            let buffer;
+            if (bufferViewIndex in buffersByView) {
+                buffer = buffersByView[bufferViewIndex];
+            } else {
+                const bufferViewData = await asset.bufferViewData(bufferViewIndex);
+                buffer = new Buffer(this.context); // TODO!? identifier
+                buffer.initialize(gl.ARRAY_BUFFER);
+                buffer.data(bufferViewData, gl.STATIC_DRAW);
+                buffersByView[bufferViewIndex] = buffer;
             }
+
+            this.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
         }
 
         // TODO!!: bounds...
@@ -179,7 +190,6 @@ export class Primitive extends Geometry {
             const valid = this.initialize([gl.ARRAY_BUFFER], [aVertex, 8]);
         }
 
-        vertexBuffer.data(positionBufferData, gl.STATIC_DRAW);
 
         // TODO!: do something with valid??
 
