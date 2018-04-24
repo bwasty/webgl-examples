@@ -1,6 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
-import { Context } from 'webgl-operate';
+import { Camera, Context, Program } from 'webgl-operate';
 
 import { Mesh } from './mesh';
 
@@ -26,7 +26,7 @@ export class Node {
         node.name = gNode.name;
 
         if (gNode.matrix !== undefined) {
-            node.matrix = mat4.fromValues.apply(undefined, gNode.matrix)
+            node.matrix = mat4.fromValues.apply(undefined, gNode.matrix);
         } else if (gNode.translation || gNode.rotation || gNode.scale) {
             node.translation = gNode.translation ?
                 vec3.fromValues.apply(undefined, gNode.translation) :
@@ -43,7 +43,7 @@ export class Node {
             node.matrix = mat4.create();
         }
 
-        if (gNode.mesh) {
+        if (gNode.mesh !== undefined) {
             const mesh = asset.gltf.meshes![gNode.mesh];
             node.mesh = Mesh.fromGltf(mesh, asset, context);
         }
@@ -60,32 +60,32 @@ export class Node {
     }
 
     updateTransform(parentTransform: mat4) {
-        // TODO!!
-        this.finalTransform = parentTransform;
+        this.finalTransform = mat4.clone(parentTransform);
 
         if (this.matrix) {
-            mat4.mul(this.finalTransform, this.matrix, this.finalTransform);
+            mat4.mul(this.finalTransform, this.finalTransform, this.matrix);
         } else {
-            // TODO!!!
+            const m = mat4.fromRotationTranslationScale(mat4.create(), this.rotation!, this.translation!, this.scale!);
+            mat4.mul(this.finalTransform, this.finalTransform, m);
         }
 
-        // TODO!!!
+        for (const node of this.children) {
+            node.updateTransform(this.finalTransform);
+        }
     }
 
     updateBounds() {
         // TODO!!
     }
 
-    draw() {
+    draw(camera: Camera, program: Program) {
         if (this.mesh) {
-            // TODO!!
-            // let mvp_matrix = cam_params.projection_matrix * cam_params.view_matrix * self.final_transform;
-            const mvpMatrix = mat4.create();
-            this.mesh.draw(this.finalTransform, mvpMatrix, vec3.create());
+            const mvpMatrix = mat4.mul(mat4.create(), camera.viewProjection, this.finalTransform);
+            this.mesh.draw(this.finalTransform, mvpMatrix, camera.eye, program);
         }
 
         for (const node of this.children) {
-            node.draw();
+            node.draw(camera, program);
         }
     }
 }

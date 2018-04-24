@@ -159,10 +159,12 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         const gl = this.context.gl;
         if (this.numIndices) {
             this.draw = function() {
+                this.bind();
                 gl.drawElements(this.mode, this.numIndices, this.indexType, 0);
             };
         } else {
             this.draw = function() {
+                this.bind();
                 gl.drawArrays(this.mode, 0, this.numVertices);
             };
         }

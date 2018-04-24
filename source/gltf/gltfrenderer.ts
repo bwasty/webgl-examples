@@ -3,7 +3,7 @@ import { BlitPass, Camera, Context, DefaultFramebuffer,
     Framebuffer, Invalidate, MouseEventProvider, Navigation, Program,
     Renderbuffer, Renderer, Shader, Texture2, TextureCube, Wizard } from 'webgl-operate';
 import { Skybox } from '../camera-navigation/skybox';
-import { Primitive } from './primitive';
+import { Scene } from './scene';
 
 export class GltfRenderer extends Renderer {
     // FBO and Blit
@@ -27,7 +27,7 @@ export class GltfRenderer extends Renderer {
     protected _skyBox: Skybox;
     protected _cubeMapChanged: boolean;
 
-    public primitive: Primitive;
+    public scene: Scene;
 
     protected onInitialize(
         context: Context,
@@ -101,7 +101,8 @@ export class GltfRenderer extends Renderer {
     }
 
     protected onUninitialize(): void {
-        this.primitive.uninitialize();
+        // TODO!!:
+        // this.scene.uninitialize();
         this._program.uninitialize();
 
         this._intermediateFBO.uninitialize();
@@ -157,9 +158,8 @@ export class GltfRenderer extends Renderer {
         gl.uniformMatrix4fv(this._uViewProjection, gl.GL_FALSE, this._camera.viewProjection);
         // TODO!!: model matrix - identity?
 
-        if (this.primitive) {
-            this.primitive.bind();
-            this.primitive.draw();
+        if (this.scene) {
+            this.scene.draw(this._camera, this._program);
         }
 
         this._program.unbind();
