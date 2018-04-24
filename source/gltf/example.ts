@@ -4,6 +4,7 @@ import * as gloperate from 'webgl-operate';
 import { Mesh } from 'gltf-loader-ts/lib/gltf';
 import { GltfRenderer } from './gltfrenderer';
 import { Primitive } from './primitive';
+import { Scene } from './scene';
 
 
 async function loadGltf(renderer: GltfRenderer) {
@@ -25,13 +26,10 @@ async function onload() {
     canvas.renderer = renderer;
 
     const asset = await loadGltf(renderer);
-    // TMP: just get the first primitive
-    const meshes = asset.gltf.meshes as Mesh[];
-    const gPrimitive = meshes[0].primitives[0];
-    const primitive = new Primitive(context);
-
-    primitive.setFromGltf(gPrimitive, asset);
-    renderer.primitive = primitive;
+    // TODO!!: TMP: just get the first scene
+    const gScene = asset.gltf.scenes![0];
+    const scene = Scene.fromGltf(gScene, asset, context);
+    renderer.scene = scene;
 
     canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));

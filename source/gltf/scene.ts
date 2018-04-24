@@ -1,6 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
-import { Context } from 'webgl-operate';
+import { Camera, Context, Program } from 'webgl-operate';
 
 import { Node } from './node';
 
@@ -30,9 +30,9 @@ export class Scene {
         return scene;
     }
 
-    draw() {
+    draw(camera: Camera, program: Program) {
         for (const node of this.nodes) {
-            node.draw();
+            node.draw(camera, program);
         }
     }
 }

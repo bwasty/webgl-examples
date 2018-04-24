@@ -18,8 +18,9 @@
 // out vec2 TexCoords_1;
 // out vec3 Color;
 
-// uniform mat4 u_model;
-uniform mat4 u_viewProjection;
+uniform mat4 u_model;
+// uniform mat4 u_viewProjection;
+uniform mat4 u_modelViewProjection;
 
 void main()
 {
@@ -28,7 +29,6 @@ void main()
     // TexCoords_0 = a_texCoords_0;
     // TexCoords_1 = a_texCoords_1;
     // Color = a_color;
-    gl_Position = u_viewProjection
-        // * u_model
+    gl_Position = u_modelViewProjection
         * vec4(a_vertex, 1.0);
 }
