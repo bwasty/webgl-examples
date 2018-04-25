@@ -9,7 +9,7 @@ import { Material } from './material';
 
 // tslint:disable:max-classes-per-file
 
-// TODO!!: move to gltf-loader-ts? GltfUtils?
+// TODO!: move to gltf-loader-ts? GltfUtils?
 /** Spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size */
 const WEBGL_BYTES_PER_COMPONENT_TYPE: { [index: number]: number } = {
     5120: 1, // BYTE
@@ -193,7 +193,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         for (const semantic in gPrimitive.attributes) {
             const accessor = this.getAccessor(gltf, gPrimitive.attributes[semantic]);
             this.numVertices = accessor.count;
-            const bufferViewIndex = accessor.bufferView as number; // TODO!: cast...
+            const bufferViewIndex = accessor.bufferView!; // TODO!: undefined case...
 
             let buffer;
             if (bufferViewIndex in buffersByView) {
@@ -209,18 +209,18 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             this.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
         }
 
-        // TODO!!: bounds...
+        // TODO!: bounds...
 
         if (gPrimitive.indices !== undefined) {
             const indexAccessor = this.getAccessor(gltf, gPrimitive.indices);
-            // TODO!: (cast) When not defined, accessor must be initialized with zeros;
+            // TODO!: (undefined) When not defined, accessor must be initialized with zeros;
             // sparse property or extensions could override zeros with actual values.
-            const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView as number);
+            const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView!);
             this.indexBuffer = new Buffer(this.context); // TODO!? identifier
             this.numIndices = indexAccessor.count;
             this.indexType = indexAccessor.componentType;
             if (this.indexType === gl.UNSIGNED_INT) {
-                // TODO!!: make sure OES_element_index_uint is active
+                // TODO!: make sure OES_element_index_uint is active
                 throw new Error('not yet supported: UNSIGNED_INT indices');
             }
 

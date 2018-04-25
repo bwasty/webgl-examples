@@ -101,7 +101,7 @@ export class GltfRenderer extends Renderer {
     }
 
     protected onUninitialize(): void {
-        // TODO!!:
+        // TODO!!: scene.uninitialize()
         // this.scene.uninitialize();
         this._program.uninitialize();
 
@@ -156,7 +156,6 @@ export class GltfRenderer extends Renderer {
 
         this._program.bind();
         gl.uniformMatrix4fv(this._uViewProjection, gl.GL_FALSE, this._camera.viewProjection);
-        // TODO!!: model matrix - identity?
 
         if (this.scene) {
             this.scene.draw(this._camera, this._program);
@@ -164,8 +163,8 @@ export class GltfRenderer extends Renderer {
 
         this._program.unbind();
 
-        // Render skybox
-        this._skyBox.frame();
+        // // Render skybox
+        // this._skyBox.frame();
 
         // Unbind FBO
         this._intermediateFBO.unbind();

@@ -25,12 +25,7 @@ export class Mesh {
         return mesh;
     }
 
-    draw(modelMatrix: mat4, mvpMatrix: mat4, cameraPosition: vec3, program: Program) {
-        // TODO!!: proper uniform location handling
-        const gl = this.context.gl;
-        gl.uniformMatrix4fv(program.uniform('u_model'), gl.FALSE, modelMatrix);
-        gl.uniformMatrix4fv(program.uniform('u_modelViewProjection'), gl.FALSE, mvpMatrix);
-
+    draw() {
         for (const primitive of this.primitives) {
             primitive.draw();
         }

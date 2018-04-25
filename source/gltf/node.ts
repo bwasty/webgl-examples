@@ -5,6 +5,7 @@ import { Camera, Context, Program } from 'webgl-operate';
 import { Mesh } from './mesh';
 
 export class Node {
+    context: Context;
     mesh: Mesh | undefined;
     children: Node[] = [];
 
@@ -14,7 +15,7 @@ export class Node {
     rotation: quat | undefined;
     scale: vec3 | undefined;
     // TODO: weights
-    // TODO!!: camera
+    // TODO!: camera
     // camera: Camera;
     name: string ;
 
@@ -24,6 +25,7 @@ export class Node {
     static fromGltf(gNode: GLTF.Node, asset: GltfAsset, context: Context): Node {
         const node = new Node();
         node.name = gNode.name;
+        node.context = context;
 
         if (gNode.matrix !== undefined) {
             node.matrix = mat4.fromValues.apply(undefined, gNode.matrix);
@@ -75,13 +77,15 @@ export class Node {
     }
 
     updateBounds() {
-        // TODO!!
+        // TODO! updateBounds
     }
 
     draw(camera: Camera, program: Program) {
         if (this.mesh) {
-            const mvpMatrix = mat4.mul(mat4.create(), camera.viewProjection, this.finalTransform);
-            this.mesh.draw(this.finalTransform, mvpMatrix, camera.eye, program);
+            // TODO!!: proper uniform location handling
+            const gl = this.context.gl;
+            gl.uniformMatrix4fv(program.uniform('u_model'), gl.FALSE, this.finalTransform);
+            this.mesh.draw();
         }
 
         for (const node of this.children) {
