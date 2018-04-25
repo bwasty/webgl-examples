@@ -9,7 +9,10 @@ import { Scene } from './scene';
 
 async function loadGltf(renderer: GltfRenderer) {
     const loader = new GltfLoader();
-    const uri = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/' +
+    const baseUri = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/'
+    // TODO!!!: cross origin...
+    // const baseUri = 'http://localhost:8080/';
+    const uri = baseUri +
         'BoxTextured/glTF/BoxTextured.gltf';
         // 'Box/glTF/Box.gltf';
     const asset = await loader.load(uri);
@@ -26,8 +29,8 @@ async function onload() {
     canvas.renderer = renderer;
 
     const asset = await loadGltf(renderer);
-    // TODO!!: TMP: just get the first scene
-    const gScene = asset.gltf.scenes![0];
+    // load the default or the first scene
+    const gScene = asset.gltf.scenes![asset.gltf.scene || 0];
     const scene = Scene.fromGltf(gScene, asset, context);
     renderer.scene = scene;
 
