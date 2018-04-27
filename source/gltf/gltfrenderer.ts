@@ -126,7 +126,6 @@ export class GltfRenderer extends Renderer {
 
         // Update clear color
         if (this._altered.clearColor) {
-            const c = this._clearColor;
             this._intermediateFBO.clearColor(this._clearColor);
         }
 
