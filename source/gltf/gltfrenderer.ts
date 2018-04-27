@@ -163,8 +163,8 @@ export class GltfRenderer extends Renderer {
 
         this._program.unbind();
 
-        // // Render skybox
-        // this._skyBox.frame();
+        // Render skybox
+        this._skyBox.frame();
 
         // Unbind FBO
         this._intermediateFBO.unbind();

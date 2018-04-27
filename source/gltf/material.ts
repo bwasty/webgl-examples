@@ -108,11 +108,38 @@ export class Material {
         const tex2 = new Texture2(context); // TODO: identifier?
         tex2.initialize(image.width, image.height, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE); // TODO: internalFormat? type?
         tex2.wrap(sampler.wrapS || gl.REPEAT, sampler.wrapT || gl.REPEAT, true, false);
-        tex2.filter(sampler.magFilter || gl.LINEAR, sampler.minFilter || gl.LINEAR, false, false);
-        tex2.data(image, false, true);
 
-        // TODO!!: NPOT, mipmap handling
+        // **Default Filtering Implementation Note:** When filtering options are defined,
+        // runtime must use them. Otherwise, it is free to adapt filtering to performance or quality goals.
+        const mag = sampler.magFilter || gl.LINEAR;
+        const min = sampler.minFilter || gl.LINEAR_MIPMAP_LINEAR;
+        tex2.filter(mag, min, false, false);
 
+        tex2.data(image, false, false);
+
+        // **Mipmapping Implementation Note**: When a sampler's minification filter (`minFilter`)
+        // uses mipmapping (`NEAREST_MIPMAP_NEAREST`, `NEAREST_MIPMAP_LINEAR`, `LINEAR_MIPMAP_NEAREST`,
+        // or `LINEAR_MIPMAP_LINEAR`), any texture referencing the sampler needs to have mipmaps,
+        // e.g., by calling GL's `generateMipmap()` function.
+        const mipMaps =
+            min === gl.LINEAR_MIPMAP_LINEAR ||
+            min === gl.LINEAR_MIPMAP_NEAREST ||
+            min === gl.NEAREST_MIPMAP_LINEAR ||
+            min === gl.NEAREST_MIPMAP_NEAREST;
+        if (mipMaps) {
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+
+        // TODO!!: NPOT handling:
+        // **Non-Power-Of-Two Texture Implementation Note**: glTF does not guarantee that a texture's
+        // dimensions are a power-of-two.  At runtime, if a texture's width or height is not a
+        // power-of-two, the texture needs to be resized so its dimensions are powers-of-two if the
+        // `sampler` the texture references
+        // * Has a wrapping mode (either `wrapS` or `wrapT`) equal to `REPEAT` or `MIRRORED_REPEAT`, or
+        // * Has a minification filter (`minFilter`) that uses mipmapping (`NEAREST_MIPMAP_NEAREST`, \\
+        //   `NEAREST_MIPMAP_LINEAR`, `LINEAR_MIPMAP_NEAREST`, or `LINEAR_MIPMAP_LINEAR`).
+
+        tex2.unbind();
         return tex2;
     }
 }
