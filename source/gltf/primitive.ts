@@ -1,25 +1,16 @@
-import { auxiliaries, Buffer, Context, Geometry, VertexArray } from 'webgl-operate';
+import { auxiliaries, Buffer, Context, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
 import { Material } from './material';
+import { ShaderFlags } from './pbr';
 // import { Bindable } from 'webgl-operate/lib/bindable';
 // import { Initializable } from 'webgl-operate/lib/initializable';
 
 // tslint:disable:max-classes-per-file
 
 // TODO!: move to gltf-loader-ts? GltfUtils?
-/** Spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size */
-const WEBGL_BYTES_PER_COMPONENT_TYPE: { [index: number]: number } = {
-    5120: 1, // BYTE
-    5121: 1, // UNSIGNED_BYTE
-    5122: 2, // SHORT
-    5123: 2, // UNSIGNED_SHORT
-    5125: 4, // UNSIGNED_INT
-    5126: 4, // FLOAT
-};
-
 /** Spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size */
 const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
     SCALAR: 1,
@@ -30,12 +21,6 @@ const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
     MAT3:   9,
     MAT4:  16,
 };
-
-// /** Byte size per element, as needed for example for `gl.vertexAttribPointer` */
-function accessorElementSize(accessor: GLTF.Accessor) {
-    return WEBGL_BYTES_PER_COMPONENT_TYPE[accessor.componentType] *
-        GLTF_ELEMENTS_PER_TYPE[accessor.type];
-}
 
 /** Standard vertex attrib locations for all semantics in the spec */
 const ATTRIB_LOCATIONS: { [semantic: string]: number } = {
@@ -48,9 +33,6 @@ const ATTRIB_LOCATIONS: { [semantic: string]: number } = {
     JOINTS_0: 6,
     WEIGHTS_0: 7,
 };
-
-// indices for Geometry._buffers
-const INDEX_BUFFER = 0;
 
 /** Data needed for `gl.vertexAttribPointer` */
 class VertexAttribute {
@@ -107,6 +89,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     private mode: GLenum;
 
     private material: Material;
+    private shaderFlags: ShaderFlags;
 
     constructor(context: Context, identifier?: string | undefined) {
         // super();
@@ -181,6 +164,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         this.indexBuffer.uninitialize();
     }
 
+    // TODO!!!: setFromGltf - make static
     async setFromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset) {
         this.mode = gPrimitive.mode || 4; // TRIANGLES (= default in spec)
 
@@ -188,6 +172,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         const gltf = asset.gltf;
         assert(!!gPrimitive.attributes.POSITION, 'primitives must have the POSITION attribute');
         if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
+
 
         const buffersByView: {[bufferView: number]: Buffer} = {};
         for (const semantic in gPrimitive.attributes) {
@@ -208,6 +193,12 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
             this.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
         }
+
+        let shaderFlags: ShaderFlags = 0;
+        if (gPrimitive.attributes.NORMALS) { shaderFlags |= ShaderFlags.HAS_NORMALS; }
+        if (gPrimitive.attributes.TANGENT) { shaderFlags |= ShaderFlags.HAS_TANGENTS; }
+        if (gPrimitive.attributes.TEXCOORD_0) { shaderFlags |= ShaderFlags.HAS_UV; }
+        if (gPrimitive.attributes.COLOR_0) { shaderFlags |= ShaderFlags.HAS_COLORS; }
 
         // TODO!: bounds...
 
@@ -233,6 +224,18 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         } else {
             const valid = this.initialize();
         }
+
+        // TODO!!!: create default material...
+        if (gPrimitive.material === undefined) {
+            // The default material, used when a mesh does not specify a material,
+            // is defined to be a material with no properties specified.
+            // All the default values of material apply.
+            this.material = new Material();
+        } else {
+            const mat = gltf.materials![gPrimitive.material];
+            this.material = await Material.fromGltf(mat, asset, this.context);
+        }
+        this.shaderFlags = shaderFlags | this.material.shaderFlags;
 
         this.initialize();
         // TODO!!: do something with valid??

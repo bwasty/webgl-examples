@@ -1,6 +1,7 @@
 import { vec3, vec4 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Context, Texture2 } from 'webgl-operate';
+import { ShaderFlags } from './pbr';
 
 export type AlphaMode = 'OPAQUE' | 'MASK' | 'BLEND';
 
@@ -90,7 +91,7 @@ export class Material {
             asset: GltfAsset, context: Context): Promise<Texture2> {
         const gl = context.gl;
         const gltf = asset.gltf;
-        const texCoord = texInfo.texCoord || 0; // TODO!: use/handle
+        const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
         const texture = gltf.textures![texInfo.index];
         // NOTE: spec allows texture.source to be undefined, unclear why
         const image = await asset.imageData.get(texture.source!);
@@ -141,5 +142,16 @@ export class Material {
 
         tex2.unbind();
         return tex2;
+    }
+
+    get shaderFlags(): ShaderFlags {
+        let flags = 0;
+        if (this.baseColorTexture) { flags |= ShaderFlags.HAS_BASECOLORMAP; }
+        if (this.normalTexture) { flags |= ShaderFlags.HAS_NORMALMAP; }
+        if (this.emissiveTexture) { flags |= ShaderFlags.HAS_EMISSIVEMAP; }
+        if (this.metallicRoughnessTexture) { flags |= ShaderFlags.HAS_METALROUGHNESSMAP; }
+        if (this.occlusionTexture) { flags |= ShaderFlags.HAS_OCCLUSIONMAP; }
+
+        return flags;
     }
 }
