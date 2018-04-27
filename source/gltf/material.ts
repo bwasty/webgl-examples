@@ -33,53 +33,54 @@ export class Material {
         const mat = new Material();
         mat.name = gMaterial.name;
         const pbr = gMaterial.pbrMetallicRoughness;
-        // TODO!!: load all textures in parallel -> Promise.all...
+        const texPromises: { [key: string]: Promise<Texture2> | undefined } = {
+            baseColorTexture: undefined,
+            metallicRoghnessTexture: undefined,
+            normalTexture: undefined,
+            occlusionTexture: undefined,
+            emissiveTexture: undefined,
+        };
         if (pbr) {
             if (pbr.baseColorFactor) {
                 mat.baseColorFactor = vec4.fromValues.apply(undefined, pbr.baseColorFactor);
             }
             if (pbr.baseColorTexture) {
-                mat.baseColorTexture = await this.loadTexture(pbr.baseColorTexture, asset, context);
+                texPromises.baseColor = this.loadTexture(pbr.baseColorTexture, asset, context);
             }
-            if (pbr.metallicFactor !== undefined) {
-                mat.metallicFactor = pbr.metallicFactor;
-            }
-            if (pbr.roughnessFactor !== undefined) {
-                mat.roughnessFactor = pbr.roughnessFactor;
-            }
+            if (pbr.metallicFactor !== undefined) { mat.metallicFactor = pbr.metallicFactor; }
+            if (pbr.roughnessFactor !== undefined) { mat.roughnessFactor = pbr.roughnessFactor; }
             if (pbr.metallicRoughnessTexture) {
-                mat.metallicRoughnessTexture = await this.loadTexture(pbr.metallicRoughnessTexture, asset, context);
+                texPromises.metallicRoughnessTexture = this.loadTexture(pbr.metallicRoughnessTexture, asset, context);
             }
         }
 
         const normalTexInfo = gMaterial.normalTexture;
         if (normalTexInfo) {
-            mat.normalTexture = await this.loadTexture(normalTexInfo, asset, context);
+            texPromises.normalTexture = this.loadTexture(normalTexInfo, asset, context);
             mat.normalScale = normalTexInfo.scale || 1;
         }
 
         const occTexInfo = gMaterial.occlusionTexture;
         if (occTexInfo) {
-            mat.occlusionTexture = await this.loadTexture(occTexInfo, asset, context);
+            texPromises.occlusionTexture = this.loadTexture(occTexInfo, asset, context);
             mat.occlusionStrength = occTexInfo.strength || 1;
         }
 
         if (gMaterial.emissiveTexture) {
-            mat.emissiveTexture = await this.loadTexture(gMaterial.emissiveTexture, asset, context);
+            texPromises.emissiveTexture = this.loadTexture(gMaterial.emissiveTexture, asset, context);
         }
         if (gMaterial.emissiveFactor) {
             mat.emissiveFactor = vec3.fromValues.apply(undefined, gMaterial.emissiveFactor);
         }
 
-        if (gMaterial.alphaCutoff !== undefined) {
-            mat.alphaCutoff = gMaterial.alphaCutoff;
-        }
+        if (gMaterial.alphaCutoff !== undefined) { mat.alphaCutoff = gMaterial.alphaCutoff; }
+        if (gMaterial.alphaMode) { mat.alphaMode = gMaterial.alphaMode as AlphaMode; }
 
-        if (gMaterial.alphaMode) {
-            mat.alphaMode = gMaterial.alphaMode as AlphaMode;
-        }
-        if (gMaterial.doubleSided !== undefined) {
-            mat.doubleSided = gMaterial.doubleSided;
+        if (gMaterial.doubleSided !== undefined) { mat.doubleSided = gMaterial.doubleSided; }
+
+        await Promise.all((Object as any).values(texPromises));
+        for (const key in texPromises) {
+            (mat as any)[key] = await texPromises[key]; // actually synchronous due to Promise.all above
         }
 
         return mat;
