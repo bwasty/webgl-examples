@@ -2,7 +2,7 @@ precision highp float;
 
 out vec4 FragColor;
 
-// in vec3 Normal;
+in vec3 Normal;
 // in vec4 Tangent;
 // in vec2 TexCoords_0;
 // in vec2 TexCoords_1;
@@ -22,9 +22,9 @@ void main()
     //     FragColor = base_color_factor;
     // }
 
-    FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    // FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 
-    // FragColor = vec4(Normal, 1.0);
+    FragColor = vec4(Normal, 1.0);
     // FragColor = vec4(Tangent.xyz, 1.0);
     // FragColor = vec4(TexCoords_0, 0.0, 1.0);
     // FragColor = vec4(TexCoords_1, 0,0, 1.0);

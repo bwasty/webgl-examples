@@ -13,11 +13,16 @@ async function loadGltf(renderer: GltfRenderer) {
     // TODO!!!: cross origin...
     // const baseUri = 'http://localhost:8080/';
     const uri = baseUri +
-        'BoxTextured/glTF/BoxTextured.gltf';
+        // 'BoxTextured/glTF/BoxTextured.gltf';
         // 'Box/glTF/Box.gltf';
+        'DamagedHelmet/glTF/DamagedHelmet.gltf';
+        // 'DamagedHelmet/glTF-Binary/DamagedHelmet.glb';
+        // 'Buggy/glTF/Buggy.gltf';
+        // 'BoomBox/glTF/BoomBox.gltf';
     const asset = await loader.load(uri);
+    console.log('Loaded ' + uri);
     await asset.preFetchAll();
-    console.log('loaded ' + uri, asset);
+    console.log('Pre-fetched all buffers & images');
     return asset;
 }
 
