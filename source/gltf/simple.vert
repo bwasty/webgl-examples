@@ -12,7 +12,7 @@
     layout (location = 5) in vec3 a_color;
 #endif
 
-// out vec3 Normal;
+out vec3 Normal;
 // out vec4 Tangent;
 // out vec2 TexCoords_0;
 // out vec2 TexCoords_1;
@@ -24,7 +24,7 @@ uniform mat4 u_viewProjection;
 
 void main()
 {
-    // Normal = a_normal; // TODO: transform
+    Normal = a_normal; // TODO: transform
     // Tangent = a_tangent;
     // TexCoords_0 = a_texCoords_0;
     // TexCoords_1 = a_texCoords_1;

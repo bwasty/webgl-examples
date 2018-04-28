@@ -43,7 +43,7 @@ class VertexAttribute {
             accessor.componentType,
             accessor.normalized || false,
             bufferView.byteStride || 0,
-            bufferView.byteOffset || 0,
+            accessor.byteOffset || 0,
         );
     }
 
@@ -84,6 +84,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     private indexBuffer: Buffer;
     private numIndices: number;
     private indexType: GLenum;
+    private indexByteOffset: number;
 
     /** POINTS / LINES / TRIANGLES etc. */
     private mode: GLenum;
@@ -109,26 +110,20 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         // TODO!!!: WebGL1 support (location lookup)... also in unbind...
         for (const semantic in this.attributes) {
             const location = ATTRIB_LOCATIONS[semantic];
-            if (location === undefined) {
-                continue;
-            }
+            if (location === undefined) { continue; }
             this.attributes[semantic].enable(location);
         }
 
-        if (this.numIndices) {
-            this.indexBuffer.bind();
-        }
+        if (this.numIndices) { this.indexBuffer.bind(); }
     }
 
     protected unbindBuffers(): void {
         for (const semantic in this.attributes) {
             const location = ATTRIB_LOCATIONS[semantic];
-            if (location === undefined) {
-                continue;
-            }
+            if (location === undefined) { continue; }
             this.attributes[semantic].disable(location);
         }
-        this.indexBuffer.unbind();
+        if (this.numIndices) { this.indexBuffer.unbind(); }
     }
 
     bind(target?: number | undefined): void {
@@ -141,14 +136,16 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     public initialize(...args: any[]): boolean {
         const gl = this.context.gl;
         if (this.numIndices) {
-            this.draw = function() {
+            this.draw = () => {
                 this.bind();
-                gl.drawElements(this.mode, this.numIndices, this.indexType, 0);
+                gl.drawElements(this.mode, this.numIndices, this.indexType, this.indexByteOffset);
+                this.unbind();
             };
         } else {
-            this.draw = function() {
+            this.draw = () => {
                 this.bind();
                 gl.drawArrays(this.mode, 0, this.numVertices);
+                this.unbind();
             };
         }
 
@@ -172,7 +169,6 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         const gltf = asset.gltf;
         assert(!!gPrimitive.attributes.POSITION, 'primitives must have the POSITION attribute');
         if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
-
 
         const buffersByView: {[bufferView: number]: Buffer} = {};
         for (const semantic in gPrimitive.attributes) {
@@ -209,6 +205,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView!);
             this.indexBuffer = new Buffer(this.context); // TODO!? identifier
             this.numIndices = indexAccessor.count;
+            this.indexByteOffset = indexAccessor.byteOffset || 0;
             this.indexType = indexAccessor.componentType;
             if (this.indexType === gl.UNSIGNED_INT) {
                 // TODO!: make sure OES_element_index_uint is active
@@ -225,7 +222,6 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             const valid = this.initialize();
         }
 
-        // TODO!!!: create default material...
         if (gPrimitive.material === undefined) {
             // The default material, used when a mesh does not specify a material,
             // is defined to be a material with no properties specified.

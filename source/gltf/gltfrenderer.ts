@@ -27,7 +27,13 @@ export class GltfRenderer extends Renderer {
     protected _skyBox: Skybox;
     protected _cubeMapChanged: boolean;
 
-    public scene: Scene;
+    protected _scene: Scene;
+    protected _sceneChanged: boolean;
+    set scene(scene: Scene) {
+        this._scene = scene;
+        this._sceneChanged = true;
+    }
+
 
     protected onInitialize(
         context: Context,
@@ -52,7 +58,7 @@ export class GltfRenderer extends Renderer {
         this._camera = new Camera();
         this._camera.center = vec3.fromValues(0.0, 0.0, 0.0);
         this._camera.up = vec3.fromValues(0.0, 1.0, 0.0);
-        this._camera.eye = vec3.fromValues(0.0, 0.0, 2.0);
+        this._camera.eye = vec3.fromValues(0.0, 0.0, 3.0);
         this._camera.near = 0.1;
         this._camera.far = 20.0;
 
@@ -132,10 +138,14 @@ export class GltfRenderer extends Renderer {
         this._navigation.update();
 
         // Reset state
-        const altered = this._altered.any || this._camera.altered || this._cubeMapChanged;
+        const altered = this._altered.any ||
+            this._camera.altered ||
+            this._cubeMapChanged ||
+            this._sceneChanged;
         this._altered.reset();
         this._camera.altered = false;
         this._cubeMapChanged = false;
+        this._sceneChanged = false;
 
         // If anything has changed, render a new frame
         return altered;
@@ -156,8 +166,8 @@ export class GltfRenderer extends Renderer {
         this._program.bind();
         gl.uniformMatrix4fv(this._uViewProjection, gl.GL_FALSE, this._camera.viewProjection);
 
-        if (this.scene) {
-            this.scene.draw(this._camera, this._program);
+        if (this._scene) {
+            this._scene.draw(this._camera, this._program);
         }
 
         this._program.unbind();
