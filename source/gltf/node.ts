@@ -22,7 +22,7 @@ export class Node {
     finalTransform: mat4 = mat4.create();
     // bounds: Bounds;
 
-    static fromGltf(gNode: GLTF.Node, asset: GltfAsset, context: Context): Node {
+    static async fromGltf(gNode: GLTF.Node, asset: GltfAsset, context: Context): Promise<Node> {
         const node = new Node();
         node.name = gNode.name;
         node.context = context;
@@ -45,14 +45,16 @@ export class Node {
             node.matrix = mat4.create();
         }
 
+        // NOTE: no waiting on mesh and children in parallel because generally
+        // only one of them exists on a node
         if (gNode.mesh !== undefined) {
-            node.mesh = Mesh.fromGltf(gNode.mesh, asset, context);
+            node.mesh = await Mesh.fromGltf(gNode.mesh, asset, context);
         }
 
         if (gNode.children) {
-            node.children = gNode.children.map((i) => {
+            node.children = await Promise.all(gNode.children.map((i) => {
                 return Node.fromGltf(asset.gltf.nodes![i], asset, context);
-            });
+            }));
         }
 
         // TODO!!: camera

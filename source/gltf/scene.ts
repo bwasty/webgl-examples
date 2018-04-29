@@ -10,13 +10,13 @@ export class Scene {
     // TODO!
     // bounds: Bounds;
 
-    static fromGltf(gScene: GLTF.Scene, asset: GltfAsset, context: Context): Scene {
+    static async fromGltf(gScene: GLTF.Scene, asset: GltfAsset, context: Context): Promise<Scene> {
         const scene = new Scene();
         scene.name = gScene.name;
-        scene.nodes = gScene.nodes!.map((i) => {
+        scene.nodes = await Promise.all(gScene.nodes!.map((i) => {
             const gNode = asset.gltf.nodes![i];
             return Node.fromGltf(gNode, asset, context);
-        });
+        }));
 
         // propagate transforms
         const rootTransform = mat4.create(); // identity
