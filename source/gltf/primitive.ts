@@ -4,7 +4,7 @@ const assert = auxiliaries.assert;
 import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
 import { Material } from './material';
-import { ShaderFlags } from './pbr';
+import { ATTRIB_LOCATIONS, ShaderFlags } from './pbrshader';
 // import { Bindable } from 'webgl-operate/lib/bindable';
 // import { Initializable } from 'webgl-operate/lib/initializable';
 
@@ -20,18 +20,6 @@ const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
     MAT2:   4,
     MAT3:   9,
     MAT4:  16,
-};
-
-/** Standard vertex attrib locations for all semantics in the spec */
-const ATTRIB_LOCATIONS: { [semantic: string]: number } = {
-    POSITION: 0,
-    NORMAL: 1,
-    TANGENT: 2,
-    TEXCOORD_0: 3,
-    TEXCOORD_1: 4,
-    COLOR_0: 5,
-    JOINTS_0: 6,
-    WEIGHTS_0: 7,
 };
 
 /** Data needed for `gl.vertexAttribPointer` */
@@ -74,7 +62,7 @@ class VertexAttribute {
     }
 }
 
-// TODO!!: Initializable, Bindable not exported...
+// TODO!: Initializable, Bindable not exported...
 export class Primitive /*extends Initializable implements Bindable*/ {
     private identifier: string;
     private vertexArray: VertexArray;
@@ -186,7 +174,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     }
 
     protected bindBuffers(): void {
-        // TODO!!!: WebGL1 support (location lookup)... also in unbind...
+        // TODO!!!: WebGL1 support (location lookup / bindAttribLocation)... also in unbind...
         for (const semantic in this.attributes) {
             const location = ATTRIB_LOCATIONS[semantic];
             if (location === undefined) { continue; }
