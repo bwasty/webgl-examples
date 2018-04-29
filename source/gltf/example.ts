@@ -10,7 +10,6 @@ import { Scene } from './scene';
 async function loadGltf(renderer: GltfRenderer) {
     const loader = new GltfLoader();
     const baseUri = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/'
-    // TODO!!!: cross origin...
     // const baseUri = 'http://localhost:8080/';
     const uri = baseUri +
         // 'BoxTextured/glTF/BoxTextured.gltf';

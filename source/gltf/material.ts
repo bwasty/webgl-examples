@@ -6,6 +6,7 @@ import { ShaderFlags } from './pbr';
 export type AlphaMode = 'OPAQUE' | 'MASK' | 'BLEND';
 
 export class Material {
+    /** Material name (if none: GLTF index) */
     name: string;
 
     // NOTE: all defaults are from the spec
@@ -30,9 +31,10 @@ export class Material {
 
     doubleSided = false;
 
-    static async fromGltf(gMaterial: GLTF.Material, asset: GltfAsset, context: Context): Promise<Material> {
+    static async fromGltf(materialIndex: GLTF.GlTfId, asset: GltfAsset, context: Context): Promise<Material> {
+        const gMaterial = asset.gltf.materials![materialIndex];
         const mat = new Material();
-        mat.name = gMaterial.name;
+        mat.name = gMaterial.name || materialIndex.toString();
         const pbr = gMaterial.pbrMetallicRoughness;
         const texPromises: { [key: string]: Promise<Texture2> | undefined } = {
             baseColorTexture: undefined,
@@ -46,29 +48,34 @@ export class Material {
                 mat.baseColorFactor = vec4.fromValues.apply(undefined, pbr.baseColorFactor);
             }
             if (pbr.baseColorTexture) {
-                texPromises.baseColor = this.loadTexture(pbr.baseColorTexture, asset, context);
+                texPromises.baseColor = this.loadTexture(pbr.baseColorTexture, asset, context,
+                    `mat_${mat.name}_baseColorTexture`);
             }
             if (pbr.metallicFactor !== undefined) { mat.metallicFactor = pbr.metallicFactor; }
             if (pbr.roughnessFactor !== undefined) { mat.roughnessFactor = pbr.roughnessFactor; }
             if (pbr.metallicRoughnessTexture) {
-                texPromises.metallicRoughnessTexture = this.loadTexture(pbr.metallicRoughnessTexture, asset, context);
+                texPromises.metallicRoughnessTexture = this.loadTexture(pbr.metallicRoughnessTexture, asset, context,
+                    `mat_${mat.name}_metallicRoughnessTexture`);
             }
         }
 
         const normalTexInfo = gMaterial.normalTexture;
         if (normalTexInfo) {
-            texPromises.normalTexture = this.loadTexture(normalTexInfo, asset, context);
+            texPromises.normalTexture = this.loadTexture(normalTexInfo, asset, context,
+                `mat_${mat.name}_normalTexture`);
             mat.normalScale = normalTexInfo.scale || 1;
         }
 
         const occTexInfo = gMaterial.occlusionTexture;
         if (occTexInfo) {
-            texPromises.occlusionTexture = this.loadTexture(occTexInfo, asset, context);
+            texPromises.occlusionTexture = this.loadTexture(occTexInfo, asset, context,
+                `mat_${mat.name}_occlusionTexture`);
             mat.occlusionStrength = occTexInfo.strength || 1;
         }
 
         if (gMaterial.emissiveTexture) {
-            texPromises.emissiveTexture = this.loadTexture(gMaterial.emissiveTexture, asset, context);
+            texPromises.emissiveTexture = this.loadTexture(gMaterial.emissiveTexture, asset, context,
+                `mat_${mat.name}_emissiveTexture`);
         }
         if (gMaterial.emissiveFactor) {
             mat.emissiveFactor = vec3.fromValues.apply(undefined, gMaterial.emissiveFactor);
@@ -88,7 +95,7 @@ export class Material {
     }
 
     static async loadTexture(texInfo: GLTF.TextureInfo | GLTF.MaterialNormalTextureInfo,
-            asset: GltfAsset, context: Context): Promise<Texture2> {
+            asset: GltfAsset, context: Context, identifier: string): Promise<Texture2> {
         const gl = context.gl;
         const gltf = asset.gltf;
         const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
@@ -106,7 +113,7 @@ export class Material {
             };
         }
 
-        const tex2 = new Texture2(context); // TODO: identifier?
+        const tex2 = new Texture2(context, identifier);
         tex2.initialize(image.width, image.height, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE); // TODO: internalFormat? type?
         tex2.wrap(sampler.wrapS || gl.REPEAT, sampler.wrapT || gl.REPEAT, true, false);
 

@@ -30,6 +30,9 @@ export class GltfRenderer extends Renderer {
     protected _scene: Scene;
     protected _sceneChanged: boolean;
     set scene(scene: Scene) {
+        if (this._scene) {
+            this._scene.uninitialize();
+        }
         this._scene = scene;
         this._sceneChanged = true;
     }
@@ -107,8 +110,7 @@ export class GltfRenderer extends Renderer {
     }
 
     protected onUninitialize(): void {
-        // TODO!!: scene.uninitialize()
-        // this.scene.uninitialize();
+        this._scene.uninitialize();
         this._program.uninitialize();
 
         this._intermediateFBO.uninitialize();
