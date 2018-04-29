@@ -46,8 +46,7 @@ export class Node {
         }
 
         if (gNode.mesh !== undefined) {
-            const mesh = asset.gltf.meshes![gNode.mesh];
-            node.mesh = Mesh.fromGltf(mesh, asset, context);
+            node.mesh = Mesh.fromGltf(gNode.mesh, asset, context);
         }
 
         if (gNode.children) {
@@ -90,6 +89,15 @@ export class Node {
 
         for (const node of this.children) {
             node.draw(camera, program);
+        }
+    }
+
+    uninitialize() {
+        if (this.mesh) {
+            this.mesh.uninitialize();
+        }
+        for (const node of this.children) {
+            node.uninitialize();
         }
     }
 }

@@ -76,6 +76,7 @@ class VertexAttribute {
 
 // TODO!!: Initializable, Bindable not exported...
 export class Primitive /*extends Initializable implements Bindable*/ {
+    private identifier: string;
     private vertexArray: VertexArray;
     /** Vertex attributes. Keys match the attribute semantic property names from glTF. */
     private attributes: { [semantic: string]: VertexAttribute } = {};
@@ -92,11 +93,11 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     private material: Material;
     private shaderFlags: ShaderFlags;
 
-    constructor(context: Context, identifier?: string | undefined) {
+    constructor(context: Context, identifier: string | undefined = 'Primitive') {
         // super();
 
-        identifier = identifier !== undefined && identifier !== `` ? identifier : this.constructor.name;
-        this.vertexArray = new VertexArray(context, identifier + 'VAO');
+        this.identifier = identifier;
+        this.vertexArray = new VertexArray(context, identifier + '_VAO');
     }
 
     private getAccessor(gltf: GLTF.GlTf, accessorId: GLTF.GlTfId): GLTF.Accessor {
@@ -181,7 +182,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
                 buffer = buffersByView[bufferViewIndex];
             } else {
                 const bufferViewData = await asset.bufferViewData(bufferViewIndex);
-                buffer = new Buffer(this.context); // TODO!? identifier
+                buffer = new Buffer(this.context, `${this.identifier}_VBO_${Object.keys(buffersByView).length}`);
                 buffer.initialize(gl.ARRAY_BUFFER);
                 buffer.data(bufferViewData, gl.STATIC_DRAW);
                 buffersByView[bufferViewIndex] = buffer;
@@ -203,7 +204,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             // TODO!: (undefined) When not defined, accessor must be initialized with zeros;
             // sparse property or extensions could override zeros with actual values.
             const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView!);
-            this.indexBuffer = new Buffer(this.context); // TODO!? identifier
+            this.indexBuffer = new Buffer(this.context, `${this.identifier}_EBO`);
             this.numIndices = indexAccessor.count;
             this.indexByteOffset = indexAccessor.byteOffset || 0;
             this.indexType = indexAccessor.componentType;
@@ -227,9 +228,9 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             // is defined to be a material with no properties specified.
             // All the default values of material apply.
             this.material = new Material();
+            this.material.name = 'DefaultMaterial';
         } else {
-            const mat = gltf.materials![gPrimitive.material];
-            this.material = await Material.fromGltf(mat, asset, this.context);
+            this.material = await Material.fromGltf(gPrimitive.material, asset, this.context);
         }
         this.shaderFlags = shaderFlags | this.material.shaderFlags;
 

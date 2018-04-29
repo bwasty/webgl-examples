@@ -35,4 +35,10 @@ export class Scene {
             node.draw(camera, program);
         }
     }
+
+    uninitialize() {
+        for (const node of this.nodes) {
+            node.uninitialize();
+        }
+    }
 }
