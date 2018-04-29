@@ -2,6 +2,7 @@
 
 #if __VERSION__ == 100
     attribute vec3 a_vertex;
+    attribute vec3 a_normal;
     // TODO! webgl1 support
 #else
     layout (location = 0) in vec3 a_vertex;
@@ -12,7 +13,7 @@
     layout (location = 5) in vec3 a_color;
 #endif
 
-out vec3 Normal;
+varying vec3 Normal;
 // out vec4 Tangent;
 // out vec2 TexCoords_0;
 // out vec2 TexCoords_1;

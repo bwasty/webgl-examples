@@ -1,7 +1,7 @@
 import { vec3, vec4 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Context, Texture2 } from 'webgl-operate';
-import { ShaderFlags } from './pbr';
+import { ShaderFlags } from './pbrshader';
 
 export type AlphaMode = 'OPAQUE' | 'MASK' | 'BLEND';
 
@@ -160,5 +160,13 @@ export class Material {
         if (this.occlusionTexture) { flags |= ShaderFlags.HAS_OCCLUSIONMAP; }
 
         return flags;
+    }
+
+    bind() {
+        // TODO!!: bind material
+    }
+
+    unbind() {
+        // TODO!! unbind material
     }
 }
