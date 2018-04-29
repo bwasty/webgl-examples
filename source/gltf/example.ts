@@ -35,12 +35,11 @@ async function onload() {
     const asset = await loadGltf(renderer);
     // load the default or the first scene
     const gScene = asset.gltf.scenes![asset.gltf.scene || 0];
-    const scene = Scene.fromGltf(gScene, asset, context);
+    const scene = await Scene.fromGltf(gScene, asset, context);
     renderer.scene = scene;
 
     canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
-
 
     // export variables
     (window as any)['canvas'] = canvas;

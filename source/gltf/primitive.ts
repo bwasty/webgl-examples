@@ -93,6 +93,84 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     private material: Material;
     private shaderFlags: ShaderFlags;
 
+    static async fromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset, context: Context,
+        identifier?: string): Promise<Primitive> {
+        const prim = new Primitive(context, identifier);
+        prim.mode = gPrimitive.mode || 4; // TRIANGLES (= default in spec)
+
+        const gl = prim.context.gl;
+        const gltf = asset.gltf;
+        assert(!!gPrimitive.attributes.POSITION, 'primitives must have the POSITION attribute');
+        if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
+
+        const buffersByView: {[bufferView: number]: Buffer} = {};
+        for (const semantic in gPrimitive.attributes) {
+            const accessor = prim.getAccessor(gltf, gPrimitive.attributes[semantic]);
+            prim.numVertices = accessor.count;
+            const bufferViewIndex = accessor.bufferView!; // TODO!: undefined case...
+
+            let buffer;
+            if (bufferViewIndex in buffersByView) {
+                buffer = buffersByView[bufferViewIndex];
+            } else {
+                const bufferViewData = await asset.bufferViewData(bufferViewIndex);
+                buffer = new Buffer(prim.context, `${prim.identifier}_VBO_${Object.keys(buffersByView).length}`);
+                buffer.initialize(gl.ARRAY_BUFFER);
+                buffer.data(bufferViewData, gl.STATIC_DRAW);
+                buffersByView[bufferViewIndex] = buffer;
+            }
+
+            prim.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
+        }
+
+        let shaderFlags: ShaderFlags = 0;
+        if (gPrimitive.attributes.NORMALS) { shaderFlags |= ShaderFlags.HAS_NORMALS; }
+        if (gPrimitive.attributes.TANGENT) { shaderFlags |= ShaderFlags.HAS_TANGENTS; }
+        if (gPrimitive.attributes.TEXCOORD_0) { shaderFlags |= ShaderFlags.HAS_UV; }
+        if (gPrimitive.attributes.COLOR_0) { shaderFlags |= ShaderFlags.HAS_COLORS; }
+
+        // TODO!: bounds...
+
+        if (gPrimitive.indices !== undefined) {
+            const indexAccessor = prim.getAccessor(gltf, gPrimitive.indices);
+            // TODO!: (undefined) When not defined, accessor must be initialized with zeros;
+            // sparse property or extensions could override zeros with actual values.
+            const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView!);
+            prim.indexBuffer = new Buffer(prim.context, `${prim.identifier}_EBO`);
+            prim.numIndices = indexAccessor.count;
+            prim.indexByteOffset = indexAccessor.byteOffset || 0;
+            prim.indexType = indexAccessor.componentType;
+            if (prim.indexType === gl.UNSIGNED_INT) {
+                // TODO!: make sure OES_element_index_uint is active
+                throw new Error('not yet supported: UNSIGNED_INT indices');
+            }
+
+            prim.indexBuffer.initialize(gl.ELEMENT_ARRAY_BUFFER);
+            prim.indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
+
+            auxiliaries.assert(prim.indexBuffer !== undefined &&
+                prim.indexBuffer.object instanceof WebGLBuffer,
+                `expected valid WebGLBuffer`);
+        } else {
+            const valid = prim.initialize();
+        }
+
+        if (gPrimitive.material === undefined) {
+            // The default material, used when a mesh does not specify a material,
+            // is defined to be a material with no properties specified.
+            // All the default values of material apply.
+            prim.material = new Material();
+            prim.material.name = 'DefaultMaterial';
+        } else {
+            prim.material = await Material.fromGltf(gPrimitive.material, asset, prim.context);
+        }
+        prim.shaderFlags = shaderFlags | prim.material.shaderFlags;
+
+        prim.initialize();
+        // TODO!!: do something with valid??
+        return prim;
+    }
+
     constructor(context: Context, identifier: string | undefined = 'Primitive') {
         // super();
 
@@ -160,82 +238,6 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             this.attributes[semantic].buffer.uninitialize();
         }
         this.indexBuffer.uninitialize();
-    }
-
-    // TODO!!!: setFromGltf - make static
-    async setFromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset) {
-        this.mode = gPrimitive.mode || 4; // TRIANGLES (= default in spec)
-
-        const gl = this.context.gl;
-        const gltf = asset.gltf;
-        assert(!!gPrimitive.attributes.POSITION, 'primitives must have the POSITION attribute');
-        if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
-
-        const buffersByView: {[bufferView: number]: Buffer} = {};
-        for (const semantic in gPrimitive.attributes) {
-            const accessor = this.getAccessor(gltf, gPrimitive.attributes[semantic]);
-            this.numVertices = accessor.count;
-            const bufferViewIndex = accessor.bufferView!; // TODO!: undefined case...
-
-            let buffer;
-            if (bufferViewIndex in buffersByView) {
-                buffer = buffersByView[bufferViewIndex];
-            } else {
-                const bufferViewData = await asset.bufferViewData(bufferViewIndex);
-                buffer = new Buffer(this.context, `${this.identifier}_VBO_${Object.keys(buffersByView).length}`);
-                buffer.initialize(gl.ARRAY_BUFFER);
-                buffer.data(bufferViewData, gl.STATIC_DRAW);
-                buffersByView[bufferViewIndex] = buffer;
-            }
-
-            this.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
-        }
-
-        let shaderFlags: ShaderFlags = 0;
-        if (gPrimitive.attributes.NORMALS) { shaderFlags |= ShaderFlags.HAS_NORMALS; }
-        if (gPrimitive.attributes.TANGENT) { shaderFlags |= ShaderFlags.HAS_TANGENTS; }
-        if (gPrimitive.attributes.TEXCOORD_0) { shaderFlags |= ShaderFlags.HAS_UV; }
-        if (gPrimitive.attributes.COLOR_0) { shaderFlags |= ShaderFlags.HAS_COLORS; }
-
-        // TODO!: bounds...
-
-        if (gPrimitive.indices !== undefined) {
-            const indexAccessor = this.getAccessor(gltf, gPrimitive.indices);
-            // TODO!: (undefined) When not defined, accessor must be initialized with zeros;
-            // sparse property or extensions could override zeros with actual values.
-            const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView!);
-            this.indexBuffer = new Buffer(this.context, `${this.identifier}_EBO`);
-            this.numIndices = indexAccessor.count;
-            this.indexByteOffset = indexAccessor.byteOffset || 0;
-            this.indexType = indexAccessor.componentType;
-            if (this.indexType === gl.UNSIGNED_INT) {
-                // TODO!: make sure OES_element_index_uint is active
-                throw new Error('not yet supported: UNSIGNED_INT indices');
-            }
-
-            this.indexBuffer.initialize(gl.ELEMENT_ARRAY_BUFFER);
-            this.indexBuffer.data(indexBufferData, gl.STATIC_DRAW);
-
-            auxiliaries.assert(this.indexBuffer !== undefined &&
-                this.indexBuffer.object instanceof WebGLBuffer,
-                `expected valid WebGLBuffer`);
-        } else {
-            const valid = this.initialize();
-        }
-
-        if (gPrimitive.material === undefined) {
-            // The default material, used when a mesh does not specify a material,
-            // is defined to be a material with no properties specified.
-            // All the default values of material apply.
-            this.material = new Material();
-            this.material.name = 'DefaultMaterial';
-        } else {
-            this.material = await Material.fromGltf(gPrimitive.material, asset, this.context);
-        }
-        this.shaderFlags = shaderFlags | this.material.shaderFlags;
-
-        this.initialize();
-        // TODO!!: do something with valid??
     }
 
     draw(): void {

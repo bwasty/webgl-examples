@@ -12,17 +12,15 @@ export class Mesh {
 
     // bounds: Bounds;
 
-    static fromGltf(meshIndex: GLTF.GlTfId, asset: GltfAsset, context: Context): Mesh {
+    static async fromGltf(meshIndex: GLTF.GlTfId, asset: GltfAsset, context: Context): Promise<Mesh> {
         const gMesh = asset.gltf.meshes![meshIndex];
         const mesh = new Mesh();
         mesh.context = context;
         mesh.name = gMesh.name;
-        mesh.primitives = gMesh.primitives.map((gPrim, i) => {
+        mesh.primitives = await Promise.all(gMesh.primitives.map((gPrim, i) => {
             const identifier = `mesh_${gMesh.name || meshIndex}_prim_${i}`;
-            const prim = new Primitive(context, identifier);
-            prim.setFromGltf(gPrim, asset);
-            return prim;
-        });
+            return Primitive.fromGltf(gPrim, asset, context, identifier);
+        }));
 
         return mesh;
     }
