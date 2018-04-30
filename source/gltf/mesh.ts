@@ -2,6 +2,7 @@ import { mat4, vec3 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Context, Program } from 'webgl-operate';
 
+import { PbrShader } from './pbrshader';
 import { Primitive } from './primitive';
 
 export class Mesh {
@@ -25,9 +26,9 @@ export class Mesh {
         return mesh;
     }
 
-    draw() {
+    draw(shader: PbrShader) {
         for (const primitive of this.primitives) {
-            primitive.draw();
+            primitive.draw(shader);
         }
     }
 

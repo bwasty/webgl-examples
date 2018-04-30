@@ -40,10 +40,9 @@ export enum ShaderFlags {
 export class PbrShader {
     program: Program;
     /**
-     * Attrib locations for WebGL1. Remains undefined for WebGL2.
-     * (ATTRIB_LOCATIONS are used)
+     * WebGL Attrib locations. Equal to `ATTRIB_LOCATIONS` for WebGL2.
      */
-    attribLocations: {[attr: string]: number} | undefined;
+    attribLocations: {[attr: string]: number} = {};
 
     uViewProjection: WebGLUniformLocation;
     uModel: WebGLUniformLocation;
@@ -58,11 +57,12 @@ export class PbrShader {
         this.program = new Program(context);
         this.program.initialize([vert, frag]);
 
-        if (context.isWebGL1) {
-            this.attribLocations = {};
+        if (context.isWebGL2) {
+            Object.assign(this.attribLocations, ATTRIB_LOCATIONS);
+        } else { // WebGL1
             for (const semantic of Object.keys(ATTRIB_LOCATIONS)) {
                 const attrib = attribName(semantic);
-                this.attribLocations[attrib] = this.program.attribute(attrib);
+                this.attribLocations[semantic] = this.program.attribute(attrib);
             }
         }
 

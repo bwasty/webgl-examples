@@ -3,6 +3,7 @@ import { BlitPass, Camera, Context, DefaultFramebuffer,
     Framebuffer, Invalidate, MouseEventProvider, Navigation, Program,
     Renderbuffer, Renderer, Shader, Texture2, TextureCube, Wizard } from 'webgl-operate';
 import { Skybox } from '../camera-navigation/skybox';
+import { PbrShader } from './pbrshader';
 import { Scene } from './scene';
 
 export class GltfRenderer extends Renderer {
@@ -13,10 +14,7 @@ export class GltfRenderer extends Renderer {
     protected _intermediateFBO: Framebuffer;
     protected _blit: BlitPass;
 
-    protected _program: Program;
-    protected _uViewProjection: WebGLUniformLocation;
-    protected _uModel: WebGLUniformLocation;
-    protected _aVertex: GLuint;
+    protected pbrShader: PbrShader;
 
     // Camera and navigation
     protected _camera: Camera;
@@ -46,16 +44,7 @@ export class GltfRenderer extends Renderer {
         const gl = this._context.gl;
         const gl2facade = this._context.gl2facade;
 
-        const vert = new Shader(this._context, gl.VERTEX_SHADER, 'simple.vert');
-        vert.initialize(require('./simple.vert'));
-        const frag = new Shader(this._context, gl.FRAGMENT_SHADER, 'simple.frag');
-        frag.initialize(require('./simple.frag'));
-        this._program = new Program(this._context);
-        this._program.initialize([vert, frag]);
-        this._aVertex = this._program.attribute('a_vertex', 0);
-
-        this._uViewProjection = this._program.uniform('u_viewProjection');
-        this._uModel = this._program.uniform('u_model');
+        this.pbrShader = new PbrShader(context);
 
         // Initialize camera
         this._camera = new Camera();
@@ -111,7 +100,7 @@ export class GltfRenderer extends Renderer {
 
     protected onUninitialize(): void {
         this._scene.uninitialize();
-        this._program.uninitialize();
+        this.pbrShader.uninitialize();
 
         this._intermediateFBO.uninitialize();
         this._defaultFBO.uninitialize();
@@ -165,14 +154,14 @@ export class GltfRenderer extends Renderer {
         // Set viewport
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
-        this._program.bind();
-        gl.uniformMatrix4fv(this._uViewProjection, gl.GL_FALSE, this._camera.viewProjection);
+        this.pbrShader.bind();
+        gl.uniformMatrix4fv(this.pbrShader.uViewProjection, gl.GL_FALSE, this._camera.viewProjection);
 
         if (this._scene) {
-            this._scene.draw(this._camera, this._program);
+            this._scene.draw(this._camera, this.pbrShader);
         }
 
-        this._program.unbind();
+        this.pbrShader.unbind();
 
         // Render skybox
         this._skyBox.frame();

@@ -1,11 +1,11 @@
 @import ../shaders/facade.vert;
 
 #if __VERSION__ == 100
-    attribute vec3 a_vertex;
+    attribute vec3 a_position;
     attribute vec3 a_normal;
     // TODO! webgl1 support
 #else
-    layout (location = 0) in vec3 a_vertex;
+    layout (location = 0) in vec3 a_position;
     layout (location = 1) in vec3 a_normal;
     layout (location = 2) in vec4 a_tangent;
     layout (location = 3) in vec2 a_texCoords_0;
@@ -25,11 +25,11 @@ uniform mat4 u_viewProjection;
 
 void main()
 {
-    Normal = a_normal; // TODO: transform
+    Normal = a_normal;
     // Tangent = a_tangent;
     // TexCoords_0 = a_texCoords_0;
     // TexCoords_1 = a_texCoords_1;
     // Color = a_color;
     gl_Position = u_viewProjection * u_model
-        * vec4(a_vertex, 1.0);
+        * vec4(a_position, 1.0);
 }
