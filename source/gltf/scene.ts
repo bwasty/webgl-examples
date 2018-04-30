@@ -2,14 +2,14 @@ import { mat4 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
+import { Aabb3 } from './aabb3';
 import { Node } from './node';
 import { PbrShader } from './pbrshader';
 
 export class Scene {
     name: string;
     nodes: Node[];
-    // TODO!
-    // bounds: Bounds;
+    bounds: Aabb3 = new Aabb3();
 
     static async fromGltf(gScene: GLTF.Scene, asset: GltfAsset, context: Context): Promise<Scene> {
         const scene = new Scene();
@@ -24,8 +24,7 @@ export class Scene {
         for (const node of scene.nodes) {
             node.updateTransform(rootTransform);
             node.updateBounds();
-            // TODO!
-            // scene.bounds = scene.bounds.union(&node.bounds);
+            scene.bounds.union(node.bounds);
         }
 
         return scene;

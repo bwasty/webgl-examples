@@ -2,6 +2,7 @@ import { mat4, quat, vec3 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
+import { Aabb3 } from './aabb3';
 import { Mesh } from './mesh';
 import { PbrShader } from './pbrshader';
 
@@ -21,7 +22,7 @@ export class Node {
     name: string ;
 
     finalTransform: mat4 = mat4.create();
-    // bounds: Bounds;
+    bounds: Aabb3;
 
     static async fromGltf(gNode: GLTF.Node, asset: GltfAsset, context: Context): Promise<Node> {
         const node = new Node();
@@ -79,7 +80,21 @@ export class Node {
     }
 
     updateBounds() {
-        // TODO! updateBounds
+        if (this.mesh) {
+            this.bounds = this.mesh.bounds.clone();
+            this.bounds.transform(this.finalTransform);
+        } else if (this.children.length === 0) {
+            // Cameras (others?) have neither mesh nor children. Their position is the origin
+            // TODO!: are there other cases? Do bounds matter for cameras?
+            this.bounds = new Aabb3(vec3.fromValues(0, 0, 0), vec3.fromValues(0, 0, 0));
+            this.bounds.transform(this.finalTransform);
+        } else {
+            // TODO!!: mesh AND children?
+            for (const node of this.children) {
+                node.updateBounds();
+                this.bounds.union(node.bounds);
+            }
+        }
     }
 
     draw(camera: Camera, shader: PbrShader) {

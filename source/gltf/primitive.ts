@@ -1,8 +1,10 @@
 import { auxiliaries, Buffer, Context, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
+import { vec3 } from 'gl-matrix';
 import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
+import { Aabb3 } from './aabb3';
 import { Material } from './material';
 import { ATTRIB_LOCATIONS, PbrShader, ShaderFlags } from './pbrshader';
 // import { Bindable } from 'webgl-operate/lib/bindable';
@@ -85,6 +87,8 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
     private drawCall: () => void;
 
+    public bounds: Aabb3;
+
     static async fromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset, context: Context,
         identifier?: string): Promise<Primitive> {
         const prim = new Primitive(context, identifier);
@@ -113,6 +117,12 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             }
 
             prim.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
+            if (semantic === 'POSITION') {
+                prim.bounds = new Aabb3(
+                    vec3.fromValues.apply(undefined, accessor.min!),
+                    vec3.fromValues.apply(undefined, accessor.max!),
+                );
+            }
         }
 
         let shaderFlags: ShaderFlags = 0;
@@ -120,8 +130,6 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         if (gPrimitive.attributes.TANGENT) { shaderFlags |= ShaderFlags.HAS_TANGENTS; }
         if (gPrimitive.attributes.TEXCOORD_0) { shaderFlags |= ShaderFlags.HAS_UV; }
         if (gPrimitive.attributes.COLOR_0) { shaderFlags |= ShaderFlags.HAS_COLORS; }
-
-        // TODO!: bounds...
 
         if (gPrimitive.indices !== undefined) {
             const indexAccessor = prim.getAccessor(gltf, gPrimitive.indices);
