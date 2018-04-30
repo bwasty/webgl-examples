@@ -33,6 +33,8 @@ export class GltfRenderer extends Renderer {
         }
         this._scene = scene;
         this._sceneChanged = true;
+
+        this.setCameraFromBounds();
     }
 
 
@@ -173,5 +175,20 @@ export class GltfRenderer extends Renderer {
          // Blit into framebuffer
          this._blit.frame();
          this.invalidate(); // TODO!: why?
+    }
+
+    protected setCameraFromBounds() {
+        const bounds = this._scene.bounds;
+        const size = vec3.len(bounds.size);
+        const center = bounds.center;
+
+        this._camera.eye = vec3.fromValues(
+            center[0] + size / 2,
+            center[1] + size / 5.0,
+            center[2] + size / 2,
+        );
+        this._camera.center = center;
+        this._camera.near = size / 100;
+        this._camera.far = size * 20;
     }
 }

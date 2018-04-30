@@ -89,7 +89,8 @@ export class Node {
             this.bounds = new Aabb3(vec3.fromValues(0, 0, 0), vec3.fromValues(0, 0, 0));
             this.bounds.transform(this.finalTransform);
         } else {
-            // TODO!!: mesh AND children?
+            // TODO!: mesh AND children?
+            this.bounds = new Aabb3();
             for (const node of this.children) {
                 node.updateBounds();
                 this.bounds.union(node.bounds);

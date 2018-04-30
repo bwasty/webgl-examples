@@ -49,6 +49,12 @@ export class Aabb3 {
         return vec3.sub(vec3.create(), this.max, this.min);
     }
 
+    get center(): vec3 {
+        const center = vec3.create();
+        vec3.add(center, this.min, this.max);
+        return vec3.scale(center, center, 0.5);
+    }
+
     /** Make this box the union of `this` and `other` and returns `this`  */
     union(other: Aabb3): Aabb3 {
         vec3.min(this.min, this.min, other.min);
