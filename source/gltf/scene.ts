@@ -3,6 +3,7 @@ import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
 import { Node } from './node';
+import { PbrShader } from './pbrshader';
 
 export class Scene {
     name: string;
@@ -30,9 +31,9 @@ export class Scene {
         return scene;
     }
 
-    draw(camera: Camera, program: Program) {
+    draw(camera: Camera, shader: PbrShader) {
         for (const node of this.nodes) {
-            node.draw(camera, program);
+            node.draw(camera, shader);
         }
     }
 

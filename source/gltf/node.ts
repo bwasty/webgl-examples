@@ -3,6 +3,7 @@ import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
 import { Mesh } from './mesh';
+import { PbrShader } from './pbrshader';
 
 export class Node {
     context: Context;
@@ -81,16 +82,15 @@ export class Node {
         // TODO! updateBounds
     }
 
-    draw(camera: Camera, program: Program) {
+    draw(camera: Camera, shader: PbrShader) {
         if (this.mesh) {
-            // TODO!!: proper uniform location handling
             const gl = this.context.gl;
-            gl.uniformMatrix4fv(program.uniform('u_model'), gl.FALSE, this.finalTransform);
-            this.mesh.draw();
+            gl.uniformMatrix4fv(shader.uModel, gl.FALSE, this.finalTransform);
+            this.mesh.draw(shader);
         }
 
         for (const node of this.children) {
-            node.draw(camera, program);
+            node.draw(camera, shader);
         }
     }
 

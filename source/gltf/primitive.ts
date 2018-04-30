@@ -4,7 +4,7 @@ const assert = auxiliaries.assert;
 import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
 import { Material } from './material';
-import { ATTRIB_LOCATIONS, ShaderFlags } from './pbrshader';
+import { ATTRIB_LOCATIONS, PbrShader, ShaderFlags } from './pbrshader';
 // import { Bindable } from 'webgl-operate/lib/bindable';
 // import { Initializable } from 'webgl-operate/lib/initializable';
 
@@ -80,6 +80,10 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
     private material: Material;
     private shaderFlags: ShaderFlags;
+    /** Currently active shader */
+    private shader: PbrShader | undefined;
+
+    private drawCall: () => void;
 
     static async fromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset, context: Context,
         identifier?: string): Promise<Primitive> {
@@ -174,10 +178,9 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     }
 
     protected bindBuffers(): void {
-        // TODO!!!: WebGL1 support (location lookup / bindAttribLocation)... also in unbind...
         for (const semantic in this.attributes) {
-            const location = ATTRIB_LOCATIONS[semantic];
-            if (location === undefined) { continue; }
+            const location = this.shader!.attribLocations[semantic];
+            if (location === undefined || location === -1) { continue; }
             this.attributes[semantic].enable(location);
         }
 
@@ -186,33 +189,22 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
     protected unbindBuffers(): void {
         for (const semantic in this.attributes) {
-            const location = ATTRIB_LOCATIONS[semantic];
-            if (location === undefined) { continue; }
+            const location = this.shader!.attribLocations[semantic];
+            if (location === undefined || location === -1) { continue; }
             this.attributes[semantic].disable(location);
         }
         if (this.numIndices) { this.indexBuffer.unbind(); }
     }
 
-    bind(target?: number | undefined): void {
-        this.vertexArray.bind();
-    }
-    unbind(target?: number | undefined): void {
-        this.vertexArray.unbind();
-    }
-
     public initialize(...args: any[]): boolean {
         const gl = this.context.gl;
         if (this.numIndices) {
-            this.draw = () => {
-                this.bind();
+            this.drawCall = () => {
                 gl.drawElements(this.mode, this.numIndices, this.indexType, this.indexByteOffset);
-                this.unbind();
             };
         } else {
-            this.draw = () => {
-                this.bind();
+            this.drawCall = () => {
                 gl.drawArrays(this.mode, 0, this.numVertices);
-                this.unbind();
             };
         }
 
@@ -228,8 +220,12 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         this.indexBuffer.uninitialize();
     }
 
-    draw(): void {
-        // overriden with optimized version in `initialize`
+    draw(shader: PbrShader): void {
+        this.shader = shader;
+        this.vertexArray.bind();
+        this.drawCall();
+        this.vertexArray.unbind();
+        this.shader = undefined;
     }
 
     get context(): Context {
