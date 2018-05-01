@@ -35,8 +35,14 @@ export class GltfRenderer extends Renderer {
         this._sceneChanged = true;
 
         this.setCameraFromBounds();
+
+        // TODO!!: hack? (_sceneChanged doesn't work...)
+        this.invalidate();
     }
 
+    get context() {
+        return this._context;
+    }
 
     protected onInitialize(
         context: Context,
@@ -183,9 +189,9 @@ export class GltfRenderer extends Renderer {
         const center = bounds.center;
 
         this._camera.eye = vec3.fromValues(
-            center[0] + size / 2,
+            center[0] + size / 1.5,
             center[1] + size / 5.0,
-            center[2] + size / 2,
+            center[2] + size / 1.5,
         );
         this._camera.center = center;
         this._camera.near = size / 100;
