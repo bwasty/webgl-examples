@@ -194,7 +194,7 @@ export class GltfRenderer extends Renderer {
             center[2] + size / 1.5,
         );
         this._camera.center = center;
-        this._camera.near = size / 100;
         this._camera.far = size * 20;
+        this._camera.near = size / 100;
     }
 }
