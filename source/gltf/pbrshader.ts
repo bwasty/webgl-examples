@@ -50,10 +50,27 @@ export class PbrShader {
     constructor(context: Context) {
         const gl = context.gl;
 
-        const vert = new Shader(context, gl.VERTEX_SHADER, 'simple.vert');
-        vert.initialize(require('./simple.vert'));
-        const frag = new Shader(context, gl.FRAGMENT_SHADER, 'simple.frag');
-        frag.initialize(require('./simple.frag'));
+        if (context.isWebGL1) {
+            if (context.supportsShaderTextureLOD) {
+                const _ = context.shaderTextureLOD;
+            } else {
+                throw new Error(`PBR shader needs unsupported extension GL_EXT_shader_texture_lod`);
+            }
+            if (context.supportsStandardDerivatives) {
+                const _ = context.standardDerivatives;
+            } else {
+                throw new Error(`PBR shader needs unsupported extension GL_OES_standard_derivatives`);
+            }
+        }
+
+        // const vert = new Shader(context, gl.VERTEX_SHADER, 'simple.vert');
+        // vert.initialize(require('./simple.vert'));
+        // const frag = new Shader(context, gl.FRAGMENT_SHADER, 'simple.frag');
+        // frag.initialize(require('./simple.frag'));
+        const vert = new Shader(context, gl.VERTEX_SHADER, 'pbr-vert.glsl');
+        vert.initialize(require('./shaders/pbr-vert.glsl'));
+        const frag = new Shader(context, gl.FRAGMENT_SHADER, 'pbr-frag.glsl');
+        frag.initialize(require('./shaders/pbr-frag.glsl'));
         this.program = new Program(context);
         this.program.initialize([vert, frag]);
 
@@ -66,8 +83,8 @@ export class PbrShader {
             }
         }
 
-        this.uViewProjection = this.program.uniform('u_viewProjection');
-        this.uModel = this.program.uniform('u_model');
+        this.uViewProjection = this.program.uniform('u_ViewProjection');
+        this.uModel = this.program.uniform('u_ModelMatrix');
     }
 
     bind() {
