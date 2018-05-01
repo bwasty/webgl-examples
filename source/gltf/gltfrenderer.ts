@@ -163,7 +163,7 @@ export class GltfRenderer extends Renderer {
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
         this.pbrShader.bind();
-        gl.uniformMatrix4fv(this.pbrShader.uViewProjection, gl.GL_FALSE, this._camera.viewProjection);
+        gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, gl.GL_FALSE, this._camera.viewProjection);
 
         if (this._scene) {
             this._scene.draw(this._camera, this.pbrShader);

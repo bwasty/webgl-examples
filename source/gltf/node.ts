@@ -101,7 +101,7 @@ export class Node {
     draw(camera: Camera, shader: PbrShader) {
         if (this.mesh) {
             const gl = this.context.gl;
-            gl.uniformMatrix4fv(shader.uModel, gl.FALSE, this.finalTransform);
+            gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, this.finalTransform);
             this.mesh.draw(shader);
         }
 
