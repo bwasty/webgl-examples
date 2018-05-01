@@ -2,9 +2,8 @@ extends example.pug
 
 
 block canvas
-
   canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
-
+  select(id = 'sample-select')
 
 block breakdown
-  p glTF 2.0 Example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader]
+  p glTF 2.0 Example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader].
