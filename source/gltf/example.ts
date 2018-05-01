@@ -7,9 +7,10 @@ import { Primitive } from './primitive';
 import { Scene } from './scene';
 
 // const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/'
-const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
-// const BASE_MODEL_URI = 'http://localhost:8080/';
+// const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
+const BASE_MODEL_URI = 'http://localhost:8080/';
 
+// tslint:disable:no-console
 type GltfVariants = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
 interface GltfSample {
     name: string;
@@ -46,7 +47,9 @@ async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader, s
             location.reload();
             return;
         }
+        console.time('GltfLoader.load');
         const asset = await loader.load(BASE_MODEL_URI + modelUrl);
+        console.timeEnd('GltfLoader.load');
         loadScene(asset, renderer);
     };
 }
@@ -57,9 +60,14 @@ function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
 }
 
 async function loadScene(asset: GltfAsset, renderer: GltfRenderer) {
+    console.time('asset.preFetchAll');
+    await asset.preFetchAll();
+    console.timeEnd('asset.preFetchAll');
     // load the default or the first scene
     const gScene = asset.gltf.scenes![asset.gltf.scene || 0];
+    console.time('Scene.fromGltf');
     const scene = await Scene.fromGltf(gScene, asset, renderer.context);
+    console.timeEnd('Scene.fromGltf');
     renderer.scene = scene;
 }
 
@@ -89,9 +97,9 @@ async function onload() {
         setupSampleDropdown(renderer, loader, 'DamagedHelmet');
     }
 
-
+    console.time('GltfLoader.load');
     const asset = await loader.load(uri);
-    await asset.preFetchAll();
+    console.timeEnd('GltfLoader.load');
     loadScene(asset, renderer);
 
     canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));

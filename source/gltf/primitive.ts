@@ -223,7 +223,10 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     uninitialize(): void {
         this.vertexArray.uninitialize();
         for (const semantic in this.attributes) {
-            this.attributes[semantic].buffer.uninitialize();
+            const buffer = this.attributes[semantic].buffer;
+            if (buffer.initialized) {
+                buffer.uninitialize();
+            }
         }
         this.indexBuffer.uninitialize();
     }
