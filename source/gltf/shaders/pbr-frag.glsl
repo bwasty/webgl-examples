@@ -13,13 +13,23 @@
 //     https://github.com/KhronosGroup/glTF-WebGL-PBR/#environment-maps
 // [4] "An Inexpensive BRDF Model for Physically based Rendering" by Christophe Schlick
 //     https://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
-#extension GL_EXT_shader_texture_lod: enable
-#extension GL_OES_standard_derivatives : enable
+
+@import ../../shaders/facade.frag;
 
 precision highp float;
 
+#if __VERSION__ == 100
+    #extension GL_EXT_shader_texture_lod: enable
+    #extension GL_OES_standard_derivatives : enable
+    #define fragColor gl_FragColor
+#else
+    layout(location = 0) out vec4 fragColor;
+#endif
+
 uniform vec3 u_LightDirection;
 uniform vec3 u_LightColor;
+
+// TODO!? ambient light (see gltf-viewer)
 
 #ifdef USE_IBL
 uniform samplerCube u_DiffuseEnvSampler;
@@ -27,34 +37,24 @@ uniform samplerCube u_SpecularEnvSampler;
 uniform sampler2D u_brdfLUT;
 #endif
 
-#ifdef HAS_BASECOLORMAP
 uniform sampler2D u_BaseColorSampler;
-#endif
-#ifdef HAS_NORMALMAP
 uniform sampler2D u_NormalSampler;
 uniform float u_NormalScale;
-#endif
-#ifdef HAS_EMISSIVEMAP
 uniform sampler2D u_EmissiveSampler;
 uniform vec3 u_EmissiveFactor;
-#endif
-#ifdef HAS_METALROUGHNESSMAP
 uniform sampler2D u_MetallicRoughnessSampler;
-#endif
-#ifdef HAS_OCCLUSIONMAP
 uniform sampler2D u_OcclusionSampler;
 uniform float u_OcclusionStrength;
-#endif
 
 uniform vec2 u_MetallicRoughnessValues;
 uniform vec4 u_BaseColorFactor;
 
 uniform vec3 u_Camera;
 
-// debugging flags used for shader output of intermediate PBR variables
-uniform vec4 u_ScaleDiffBaseMR;
-uniform vec4 u_ScaleFGDSpec;
-uniform vec4 u_ScaleIBLAmbient;
+// // debugging flags used for shader output of intermediate PBR variables
+// uniform vec4 u_ScaleDiffBaseMR;
+// uniform vec4 u_ScaleFGDSpec;
+// uniform vec4 u_ScaleIBLAmbient;
 
 varying vec3 v_Position;
 
@@ -141,6 +141,7 @@ vec3 getNormal()
     return n;
 }
 
+#ifdef USE_IBL
 // Calculation of the lighting contribution from an optional Image Based Light source.
 // Precomputed Environment Maps are required uniform inputs and are computed as outlined in [1].
 // See our README.md on Environment Maps [3] for additional discussion.
@@ -167,6 +168,7 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 
     return diffuse + specular;
 }
+#endif
 
 // Basic Lambertian diffuse
 // Implementation from Lambert's Photometria https://archive.org/details/lambertsphotome00lambgoog
@@ -303,17 +305,17 @@ void main()
     color += emissive;
 #endif
 
-    // This section uses mix to override final color for reference app visualization
-    // of various parameters in the lighting equation.
-    color = mix(color, F, u_ScaleFGDSpec.x);
-    color = mix(color, vec3(G), u_ScaleFGDSpec.y);
-    color = mix(color, vec3(D), u_ScaleFGDSpec.z);
-    color = mix(color, specContrib, u_ScaleFGDSpec.w);
+    // // This section uses mix to override final color for reference app visualization
+    // // of various parameters in the lighting equation.
+    // color = mix(color, F, u_ScaleFGDSpec.x);
+    // color = mix(color, vec3(G), u_ScaleFGDSpec.y);
+    // color = mix(color, vec3(D), u_ScaleFGDSpec.z);
+    // color = mix(color, specContrib, u_ScaleFGDSpec.w);
 
-    color = mix(color, diffuseContrib, u_ScaleDiffBaseMR.x);
-    color = mix(color, baseColor.rgb, u_ScaleDiffBaseMR.y);
-    color = mix(color, vec3(metallic), u_ScaleDiffBaseMR.z);
-    color = mix(color, vec3(perceptualRoughness), u_ScaleDiffBaseMR.w);
+    // color = mix(color, diffuseContrib, u_ScaleDiffBaseMR.x);
+    // color = mix(color, baseColor.rgb, u_ScaleDiffBaseMR.y);
+    // color = mix(color, vec3(metallic), u_ScaleDiffBaseMR.z);
+    // color = mix(color, vec3(perceptualRoughness), u_ScaleDiffBaseMR.w);
 
-    gl_FragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
+    fragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
 }

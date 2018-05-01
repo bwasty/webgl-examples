@@ -144,7 +144,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
                 if (context.supportsElementIndexUint) {
                     const _ = context.elementIndexUint; // activate extension
                 } else {
-                    throw new Error('not yet supported on WebGL1: UNSIGNED_INT indices');
+                    throw new Error(`Primitive ${prim.identifier} needs unsupported extension OES_element_index_uint`);
                 }
             }
 
