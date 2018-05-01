@@ -96,7 +96,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
         const gl = prim.context.gl;
         const gltf = asset.gltf;
-        assert(!!gPrimitive.attributes.POSITION, 'primitives must have the POSITION attribute');
+        assert(gPrimitive.attributes.POSITION !== undefined, 'primitives must have the POSITION attribute');
         if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
 
         const buffersByView: {[bufferView: number]: Buffer} = {};
@@ -140,9 +140,12 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             prim.numIndices = indexAccessor.count;
             prim.indexByteOffset = indexAccessor.byteOffset || 0;
             prim.indexType = indexAccessor.componentType;
-            if (prim.indexType === gl.UNSIGNED_INT) {
-                // TODO!: make sure OES_element_index_uint is active
-                throw new Error('not yet supported: UNSIGNED_INT indices');
+            if (prim.indexType === gl.UNSIGNED_INT && context.isWebGL1) {
+                if (context.supportsElementIndexUint) {
+                    const _ = context.elementIndexUint; // activate extension
+                } else {
+                    throw new Error('not yet supported on WebGL1: UNSIGNED_INT indices');
+                }
             }
 
             prim.indexBuffer.initialize(gl.ELEMENT_ARRAY_BUFFER);
@@ -151,8 +154,6 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             auxiliaries.assert(prim.indexBuffer !== undefined &&
                 prim.indexBuffer.object instanceof WebGLBuffer,
                 `expected valid WebGLBuffer`);
-        } else {
-            const valid = prim.initialize();
         }
 
         if (gPrimitive.material === undefined) {
@@ -228,7 +229,9 @@ export class Primitive /*extends Initializable implements Bindable*/ {
                 buffer.uninitialize();
             }
         }
-        this.indexBuffer.uninitialize();
+        if (this.indexBuffer) {
+            this.indexBuffer.uninitialize();
+        }
     }
 
     draw(shader: PbrShader): void {

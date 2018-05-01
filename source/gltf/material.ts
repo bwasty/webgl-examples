@@ -135,6 +135,7 @@ export class Material {
             min === gl.NEAREST_MIPMAP_LINEAR ||
             min === gl.NEAREST_MIPMAP_NEAREST;
         if (mipMaps) {
+            // TODO!!: fails on WebGL1 for NPOT textures
             gl.generateMipmap(gl.TEXTURE_2D);
         }
 

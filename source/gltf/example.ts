@@ -41,17 +41,32 @@ async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader, s
 
     window.onpopstate = async(event) => {
         const modelUrl = event.state;
-        if (!modelUrl) {
-            // TODO!!: necessar?
-            console.warn('yes, remove todo above...');
-            location.reload();
-            return;
-        }
         console.time('GltfLoader.load');
         const asset = await loader.load(BASE_MODEL_URI + modelUrl);
         console.timeEnd('GltfLoader.load');
         loadScene(asset, renderer);
     };
+
+    (window as any).cycleModels = async(delayMs?: number) => {
+        const select = document.getElementById('sample-select') as HTMLSelectElement;
+        const numOptions = select.options.length;
+        for (const option of Array.from(select.options)) {
+            console.log(option.text);
+            const asset = await loader.load(BASE_MODEL_URI + option.value);
+            try {
+                await loadScene(asset, renderer);
+            } catch (e) {
+                console.error(e);
+            }
+            if (delayMs !== undefined) {
+                await delay(delayMs);
+            }
+        }
+    };
+}
+
+function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms) );
 }
 
 /** baseUrl should end with a slash */

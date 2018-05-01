@@ -43,7 +43,7 @@
     },
     "scripts": {
         "build": "webpack-cli --mode production && node pugconfig.js",
-        "build-watch": "webpack-cli --mode production --watch",
+        "build-watch": "webpack-cli --mode development --watch",
         "pug-watch": "node pugconfig.js --watch",
         "website": "node pugconfig.js",
         "check": "tslint --project tsconfig.json --force --format stylish --config tslint.json",
