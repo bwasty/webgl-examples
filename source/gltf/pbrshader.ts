@@ -37,6 +37,75 @@ export enum ShaderFlags {
     USE_TEX_LOD           = 1 << 10,
 }
 
+// tslint:disable:variable-name
+// tslint:disable:no-null-keyword
+class PbrUniformLocations {
+    // TODO!: UBO for matrices, camera, light(s)?
+    u_ViewProjection: WebGLUniformLocation | null = null;
+    u_ModelMatrix: WebGLUniformLocation | null = null;
+    u_Camera: WebGLUniformLocation | null = null;
+
+    u_LightDirection: WebGLUniformLocation | null = null;
+    u_LightColor: WebGLUniformLocation | null = null;
+
+    // TODO!?: ambient light
+    // u_AmbientLightColor: WebGLUniformLocation | null = null;
+    // u_AmbientLightIntensity: WebGLUniformLocation | null = null;
+
+    // TODO!: set when integrating IBL (unused now)
+    // u_DiffuseEnvSampler: WebGLUniformLocation | null = null;
+    // u_SpecularEnvSampler: WebGLUniformLocation | null = null;
+    // u_brdfLUT: WebGLUniformLocation | null = null;
+
+    ///
+
+    u_BaseColorSampler: WebGLUniformLocation | null = null;
+    u_BaseColorFactor: WebGLUniformLocation | null = null;
+
+    u_NormalSampler: WebGLUniformLocation | null = null;
+    u_NormalScale: WebGLUniformLocation | null = null;
+
+    u_EmissiveSampler: WebGLUniformLocation | null = null;
+    u_EmissiveFactor: WebGLUniformLocation | null = null;
+
+    u_MetallicRoughnessSampler: WebGLUniformLocation | null = null;
+    u_MetallicRoughnessValues: WebGLUniformLocation | null = null;
+
+    u_OcclusionSampler: WebGLUniformLocation | null = null;
+    u_OcclusionStrength: WebGLUniformLocation | null = null;
+
+    // TODO!: use/remove debugging uniforms
+    // debugging flags used for shader output of intermediate PBR variables
+    // u_ScaleDiffBaseMR: WebGLUniformLocation | null = null;
+    // u_ScaleFGDSpec: WebGLUniformLocation | null = null;
+    // u_ScaleIBLAmbient: WebGLUniformLocation | null = null;
+
+    constructor(program: Program) {
+        for (const uniform in this) {
+           (this as any)[uniform] = program.uniform(uniform);
+           if (this[uniform] === null && !uniform.endsWith('Sampler')) {
+               console.warn('Failed to get uniform location for ' + uniform);
+           }
+        }
+
+        program.bind();
+        const gl = program.context.gl;
+        gl.uniform1i(this.u_BaseColorSampler, 0);
+        gl.uniform1i(this.u_NormalSampler, 1);
+        gl.uniform1i(this.u_EmissiveSampler, 2);
+        gl.uniform1i(this.u_MetallicRoughnessSampler, 3);
+        gl.uniform1i(this.u_OcclusionSampler, 3);
+
+        gl.uniform3f(this.u_LightColor, 5.0, 5.0, 5.0);
+        // TODO!: optional minus on z
+        gl.uniform3f(this.u_LightDirection, 0.0, 0.5, 0.5);
+
+        // gl.uniform3f(this.u_AmbientLightColor, 1.0, 1.0, 1.0);
+        // gl.uniformf(this.u_AmbientLightIntensity, 0.2);
+    }
+}
+
+// tslint:disable:max-classes-per-file
 export class PbrShader {
     program: Program;
     /**
@@ -44,8 +113,7 @@ export class PbrShader {
      */
     attribLocations: {[attr: string]: number} = {};
 
-    uViewProjection: WebGLUniformLocation;
-    uModel: WebGLUniformLocation;
+    uniforms: PbrUniformLocations;
 
     constructor(context: Context) {
         const gl = context.gl;
@@ -83,8 +151,7 @@ export class PbrShader {
             }
         }
 
-        this.uViewProjection = this.program.uniform('u_ViewProjection');
-        this.uModel = this.program.uniform('u_ModelMatrix');
+        this.uniforms = new PbrUniformLocations(this.program);
     }
 
     bind() {
