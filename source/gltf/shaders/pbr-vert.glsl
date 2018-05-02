@@ -19,6 +19,13 @@
     layout (location = 5) in vec3 a_color;
 #endif
 
+// vertex shader + fragment shader
+const int HAS_NORMALS           = 1;
+const int HAS_TANGENTS          = 1 << 1;
+const int HAS_UV                = 1 << 2;
+const int HAS_COLORS            = 1 << 3;
+
+uniform mediump int u_PbrFlags;
 uniform mat4 u_ModelMatrix;
 uniform mat4 u_ViewProjection;
 uniform mat4 u_NormalMatrix;
@@ -26,30 +33,28 @@ uniform mat4 u_NormalMatrix;
 varying vec3 v_Position;
 varying vec2 v_UV;
 
-#ifdef HAS_NORMALS
-#ifdef HAS_TANGENTS
 varying mat3 v_TBN;
-#else
 varying vec3 v_Normal;
-#endif
-#endif
 
+bool checkFlag(int flag) {
+    return (u_PbrFlags & flag) == flag;
+}
 
 void main()
 {
   vec4 pos = u_ModelMatrix * a_position;
   v_Position = vec3(pos.xyz) / pos.w;
 
-  #ifdef HAS_NORMALS
-  #ifdef HAS_TANGENTS
+  if (checkFlag(HAS_NORMALS)) {
+  if (checkFlag(HAS_TANGENTS)) {
   vec3 normalW = normalize(vec3(u_NormalMatrix * vec4(a_normal.xyz, 0.0)));
   vec3 tangentW = normalize(vec3(u_ModelMatrix * vec4(a_tangent.xyz, 0.0)));
   vec3 bitangentW = cross(normalW, tangentW) * a_tangent.w;
   v_TBN = mat3(tangentW, bitangentW, normalW);
-  #else // HAS_TANGENTS != 1
+  } else { // HAS_TANGENTS != 1
   v_Normal = normalize(vec3(u_ModelMatrix * vec4(a_normal.xyz, 0.0)));
-  #endif
-  #endif
+  }
+  }
 
   #ifdef HAS_UV
   v_UV = a_texcoord_0;
