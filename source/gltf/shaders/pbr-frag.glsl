@@ -14,17 +14,32 @@
 // [4] "An Inexpensive BRDF Model for Physically based Rendering" by Christophe Schlick
 //     https://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
 
-@import ../../shaders/facade.frag;
-
 precision highp float;
 
 #if __VERSION__ == 100
     #extension GL_EXT_shader_texture_lod: enable
     #extension GL_OES_standard_derivatives : enable
     #define fragColor gl_FragColor
+    #define texture( texture2D(
 #else
+    #define varying in
     layout(location = 0) out vec4 fragColor;
 #endif
+
+// vertex shader + fragment shader
+const int HAS_NORMALS           = 1;
+const int HAS_TANGENTS          = 1 << 1;
+const int HAS_UV                = 1 << 2;
+const int HAS_COLORS            = 1 << 3;
+
+// fragment shader only
+const int USE_IBL               = 1 << 4;
+const int HAS_BASECOLORMAP      = 1 << 5;
+const int HAS_NORMALMAP         = 1 << 6;
+const int HAS_EMISSIVEMAP       = 1 << 7;
+const int HAS_METALROUGHNESSMAP = 1 << 8;
+const int HAS_OCCLUSIONMAP      = 1 << 9;
+const int USE_TEX_LOD           = 1 << 10;
 
 uniform vec3 u_LightDirection;
 uniform vec3 u_LightColor;
@@ -37,6 +52,7 @@ uniform samplerCube u_SpecularEnvSampler;
 uniform sampler2D u_brdfLUT;
 #endif
 
+uniform mediump int u_PbrFlags;
 uniform sampler2D u_BaseColorSampler;
 uniform sampler2D u_NormalSampler;
 uniform float u_NormalScale;
@@ -60,13 +76,8 @@ varying vec3 v_Position;
 
 varying vec2 v_UV;
 
-#ifdef HAS_NORMALS
-#ifdef HAS_TANGENTS
 varying mat3 v_TBN;
-#else
 varying vec3 v_Normal;
-#endif
-#endif
 
 // Encapsulate the various inputs used by the various functions in the shading equation
 // We store values in this struct to simplify the integration of alternative implementations
@@ -105,38 +116,44 @@ vec4 SRGBtoLINEAR(vec4 srgbIn)
     #endif //MANUAL_SRGB
 }
 
+bool checkFlag(int flag) {
+    return (u_PbrFlags & flag) == flag;
+}
+
 // Find the normal for this fragment, pulling either from a predefined normal map
 // or from the interpolated mesh normal and tangent attributes.
 vec3 getNormal()
 {
     // Retrieve the tangent space matrix
-#ifndef HAS_TANGENTS
+    mat3 tbn;
+if (!checkFlag(HAS_TANGENTS)) {
     vec3 pos_dx = dFdx(v_Position);
     vec3 pos_dy = dFdy(v_Position);
     vec3 tex_dx = dFdx(vec3(v_UV, 0.0));
     vec3 tex_dy = dFdy(vec3(v_UV, 0.0));
     vec3 t = (tex_dy.t * pos_dx - tex_dx.t * pos_dy) / (tex_dx.s * tex_dy.t - tex_dy.s * tex_dx.t);
 
-#ifdef HAS_NORMALS
-    vec3 ng = normalize(v_Normal);
-#else
-    vec3 ng = cross(pos_dx, pos_dy);
-#endif
+    vec3 ng;
+if (checkFlag(HAS_NORMALS))
+    ng = normalize(v_Normal);
+else
+    ng = cross(pos_dx, pos_dy);
 
     t = normalize(t - ng * dot(ng, t));
     vec3 b = normalize(cross(ng, t));
-    mat3 tbn = mat3(t, b, ng);
-#else // HAS_TANGENTS
-    mat3 tbn = v_TBN;
-#endif
+    tbn = mat3(t, b, ng);
+} else { // HAS_TANGENTS
+    tbn = v_TBN;
+}
 
-#ifdef HAS_NORMALMAP
-    vec3 n = texture2D(u_NormalSampler, v_UV).rgb;
+    vec3 n;
+if (checkFlag(HAS_NORMALMAP)) {
+    n = texture(u_NormalSampler, v_UV).rgb;
     n = normalize(tbn * ((2.0 * n - 1.0) * vec3(u_NormalScale, u_NormalScale, 1.0)));
-#else
+} else {
     // The tbn matrix is linearly interpolated, so we need to re-normalize
-    vec3 n = normalize(tbn[2].xyz);
-#endif
+    n = normalize(tbn[2].xyz);
+}
 
     return n;
 }
@@ -150,7 +167,7 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
     float mipCount = 9.0; // resolution of 512x512
     float lod = (pbrInputs.perceptualRoughness * mipCount);
     // retrieve a scale and bias to F0. See [1], Figure 3
-    vec3 brdf = SRGBtoLINEAR(texture2D(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
+    vec3 brdf = SRGBtoLINEAR(texture(u_brdfLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
     vec3 diffuseLight = SRGBtoLINEAR(textureCube(u_DiffuseEnvSampler, n)).rgb;
 
 #ifdef USE_TEX_LOD
@@ -217,13 +234,13 @@ void main()
     // or from a metallic-roughness map
     float perceptualRoughness = u_MetallicRoughnessValues.y;
     float metallic = u_MetallicRoughnessValues.x;
-#ifdef HAS_METALROUGHNESSMAP
+if (checkFlag(HAS_METALROUGHNESSMAP)) {
     // Roughness is stored in the 'g' channel, metallic is stored in the 'b' channel.
     // This layout intentionally reserves the 'r' channel for (optional) occlusion map data
-    vec4 mrSample = texture2D(u_MetallicRoughnessSampler, v_UV);
+    vec4 mrSample = texture(u_MetallicRoughnessSampler, v_UV);
     perceptualRoughness = mrSample.g * perceptualRoughness;
     metallic = mrSample.b * metallic;
-#endif
+}
     perceptualRoughness = clamp(perceptualRoughness, c_MinRoughness, 1.0);
     metallic = clamp(metallic, 0.0, 1.0);
     // Roughness is authored as perceptual roughness; as is convention,
@@ -231,11 +248,11 @@ void main()
     float alphaRoughness = perceptualRoughness * perceptualRoughness;
 
     // The albedo may be defined from a base texture or a flat color
-#ifdef HAS_BASECOLORMAP
-    vec4 baseColor = SRGBtoLINEAR(texture2D(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
-#else
-    vec4 baseColor = u_BaseColorFactor;
-#endif
+    vec4 baseColor;
+if (checkFlag(HAS_BASECOLORMAP))
+    baseColor = SRGBtoLINEAR(texture(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
+else
+    baseColor = u_BaseColorFactor;
 
     vec3 f0 = vec3(0.04);
     vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0);
@@ -295,15 +312,15 @@ void main()
 #endif
 
     // Apply optional PBR terms for additional (optional) shading
-#ifdef HAS_OCCLUSIONMAP
-    float ao = texture2D(u_OcclusionSampler, v_UV).r;
+if (checkFlag(HAS_OCCLUSIONMAP)) {
+    float ao = texture(u_OcclusionSampler, v_UV).r;
     color = mix(color, color * ao, u_OcclusionStrength);
-#endif
+}
 
-#ifdef HAS_EMISSIVEMAP
-    vec3 emissive = SRGBtoLINEAR(texture2D(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
+if (checkFlag(HAS_EMISSIVEMAP)) {
+    vec3 emissive = SRGBtoLINEAR(texture(u_EmissiveSampler, v_UV)).rgb * u_EmissiveFactor;
     color += emissive;
-#endif
+}
 
     // // This section uses mix to override final color for reference app visualization
     // // of various parameters in the lighting equation.

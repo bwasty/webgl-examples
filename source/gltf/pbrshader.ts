@@ -74,6 +74,8 @@ class PbrUniformLocations {
     u_OcclusionSampler: WebGLUniformLocation | null = null;
     u_OcclusionStrength: WebGLUniformLocation | null = null;
 
+    u_PbrFlags: WebGLUniformLocation | null = null;
+
     // TODO!: use/remove debugging uniforms
     // debugging flags used for shader output of intermediate PBR variables
     // u_ScaleDiffBaseMR: WebGLUniformLocation | null = null;
@@ -94,7 +96,7 @@ class PbrUniformLocations {
         gl.uniform1i(this.u_NormalSampler, 1);
         gl.uniform1i(this.u_EmissiveSampler, 2);
         gl.uniform1i(this.u_MetallicRoughnessSampler, 3);
-        gl.uniform1i(this.u_OcclusionSampler, 3);
+        gl.uniform1i(this.u_OcclusionSampler, 4);
 
         gl.uniform3f(this.u_LightColor, 5.0, 5.0, 5.0);
         // TODO!: optional minus on z

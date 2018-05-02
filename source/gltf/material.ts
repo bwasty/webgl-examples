@@ -1,11 +1,12 @@
 import { vec3, vec4 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Context, Texture2 } from 'webgl-operate';
-import { ShaderFlags } from './pbrshader';
+import { PbrShader, ShaderFlags } from './pbrshader';
 
 export type AlphaMode = 'OPAQUE' | 'MASK' | 'BLEND';
 
 export class Material {
+    context: Context;
     /** Material name (if none: GLTF index) */
     name: string;
 
@@ -34,6 +35,7 @@ export class Material {
     static async fromGltf(materialIndex: GLTF.GlTfId, asset: GltfAsset, context: Context): Promise<Material> {
         const gMaterial = asset.gltf.materials![materialIndex];
         const mat = new Material();
+        mat.context = context;
         mat.name = gMaterial.name || materialIndex.toString();
         const pbr = gMaterial.pbrMetallicRoughness;
         const texPromises: { [key: string]: Promise<Texture2> | undefined } = {
@@ -48,7 +50,7 @@ export class Material {
                 mat.baseColorFactor = vec4.fromValues.apply(undefined, pbr.baseColorFactor);
             }
             if (pbr.baseColorTexture) {
-                texPromises.baseColor = this.loadTexture(pbr.baseColorTexture, asset, context,
+                texPromises.baseColorTexture = this.loadTexture(pbr.baseColorTexture, asset, context,
                     `mat_${mat.name}_baseColorTexture`);
             }
             if (pbr.metallicFactor !== undefined) { mat.metallicFactor = pbr.metallicFactor; }
@@ -100,6 +102,7 @@ export class Material {
         const gltf = asset.gltf;
         const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
         const texture = gltf.textures![texInfo.index];
+        // TODO!!: share re-used images? textures?
         // NOTE: spec allows texture.source to be undefined, unclear why
         const image = await asset.imageData.get(texture.source!);
         let sampler: GLTF.Sampler;
@@ -163,11 +166,31 @@ export class Material {
         return flags;
     }
 
-    bind() {
-        // TODO!!: bind material
+    bind(shader: PbrShader) {
+        const gl: WebGLRenderingContext = this.context.gl;
+        const uniforms = shader.uniforms;
+        shader.bind(); // TODO!!!: avoid re-binding when already active?
+
+        // NOTE: for sampler numbers, see also PbrShader constructor
+        gl.uniform4fv(uniforms.u_BaseColorFactor!, this.baseColorFactor);
+        if (this.baseColorTexture) { this.baseColorTexture.bind(gl.TEXTURE0); }
+        if (this.normalTexture) {
+            this.normalTexture.bind(gl.TEXTURE1);
+            gl.uniform1f(uniforms.u_NormalScale, this.normalScale);
+        }
+        if (this.emissiveTexture) {
+            this.emissiveTexture.bind(gl.TEXTURE2);
+            gl.uniform3fv(uniforms.u_EmissiveFactor!, this.emissiveFactor);
+        }
+        if (this.metallicRoughnessTexture) { this.metallicRoughnessTexture.bind(gl.TEXTURE3); }
+        gl.uniform2f(uniforms.u_MetallicRoughnessValues, this.metallicFactor, this.roughnessFactor);
+        if (this.occlusionTexture) {
+            this.occlusionTexture.bind(gl.TEXTURE4);
+            gl.uniform1f(uniforms.u_OcclusionStrength, this.occlusionStrength);
+        }
     }
 
     unbind() {
-        // TODO!! unbind material
+        // TODO!! unbind material??
     }
 }
