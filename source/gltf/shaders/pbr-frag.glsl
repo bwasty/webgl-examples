@@ -257,7 +257,8 @@ else
     baseColor = u_BaseColorFactor;
 
     // spec: COLOR_0 ... acts as an additional linear multiplier to baseColor
-    baseColor *= v_Color;
+    // TODO!: distinguish vec3/vec4 colors...
+    baseColor *= vec4(v_Color.rgb, 1.0);
 
     vec3 f0 = vec3(0.04);
     vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0);

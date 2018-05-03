@@ -6,9 +6,9 @@ import { GltfRenderer } from './gltfrenderer';
 import { Primitive } from './primitive';
 import { Scene } from './scene';
 
-// const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/'
+const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/'
 // const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
-const BASE_MODEL_URI = 'http://localhost:8080/';
+// const BASE_MODEL_URI = 'http://localhost:8080/';
 
 // tslint:disable:no-console
 type GltfVariants = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
@@ -19,7 +19,7 @@ interface GltfSample {
 }
 
 async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader, selectedModel: string) {
-    const url = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/model-index.json';
+    const url = BASE_MODEL_URI + 'model-index.json';
     const samples: GltfSample[] = await(await fetch(url)).json();
     const select = document.getElementById('sample-select') as HTMLSelectElement;
     for (const sample of samples) {
@@ -81,7 +81,9 @@ async function loadScene(asset: GltfAsset, renderer: GltfRenderer) {
     // load the default or the first scene
     const gScene = asset.gltf.scenes![asset.gltf.scene || 0];
     console.time('Scene.fromGltf');
+    // console.profile('Scene.fromGltf');
     const scene = await Scene.fromGltf(gScene, asset, renderer.context);
+    // console.profileEnd();
     console.timeEnd('Scene.fromGltf');
     renderer.scene = scene;
 }
