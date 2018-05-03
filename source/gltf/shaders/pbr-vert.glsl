@@ -9,14 +9,14 @@
   attribute vec4 a_tangent;
   attribute vec2 a_texcoord_0;
   // attribute vec2 a_texcoord_1;
-  attribute vec3 a_color;
+  attribute vec4 a_color;
 #else
     layout (location = 0) in vec4 a_position;
     layout (location = 1) in vec3 a_normal;
     layout (location = 2) in vec4 a_tangent;
     layout (location = 3) in vec2 a_texcoord_0;
     // layout (location = 4) in vec2 a_texcoord_1;
-    layout (location = 5) in vec3 a_color;
+    layout (location = 5) in vec4 a_color;
 #endif
 
 // vertex shader + fragment shader
@@ -32,6 +32,7 @@ uniform mat3 u_NormalMatrix;
 
 varying vec3 v_Position;
 varying vec2 v_UV;
+varying vec4 v_Color;
 
 varying mat3 v_TBN;
 varying vec3 v_Normal;
@@ -60,6 +61,11 @@ void main()
   v_UV = a_texcoord_0;
   else
   v_UV = vec2(0.,0.);
+
+  if (checkFlag(HAS_COLORS))
+  v_Color = a_color;
+  else
+  v_Color = vec4(1.0);
 
   gl_Position = u_ViewProjection * u_ModelMatrix * a_position; // needs w for proper perspective correction
 }
