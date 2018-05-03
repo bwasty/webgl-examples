@@ -101,6 +101,7 @@ export class Node {
     draw(camera: Camera, shader: PbrShader) {
         if (this.mesh) {
             const gl = this.context.gl;
+            // TODO: UBO?
             gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, this.finalTransform);
             const normalMatrix = mat3.normalFromMat4(mat3.create(), this.finalTransform);
             gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, normalMatrix);

@@ -104,19 +104,13 @@ export class Material {
         // TODO!!: share re-used images? textures?
         // NOTE: spec allows texture.source to be undefined, unclear why
         const image = await asset.imageData.get(texture.source!);
-        let sampler: GLTF.Sampler;
-        if (texture.sampler) {
-            sampler = gltf.samplers![texture.sampler];
-        } else {
-            // spec: when undefined, a sampler with repeat wrapping and auto filtering should be used.
-            sampler = {
-                wrapS: gl.REPEAT,
-                wrapT: gl.REPEAT,
-            };
-        }
+        // spec: when undefined, a sampler with repeat wrapping and auto filtering should be used.
+        const sampler: GLTF.Sampler = texture.sampler !== undefined ?
+            gltf.samplers![texture.sampler] :
+            {};
 
         const tex2 = new Texture2(context, identifier);
-        tex2.initialize(image.width, image.height, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE); // TODO: internalFormat? type?
+        tex2.initialize(image.width, image.height, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE);
         tex2.wrap(sampler.wrapS || gl.REPEAT, sampler.wrapT || gl.REPEAT, true, false);
 
         // **Default Filtering Implementation Note:** When filtering options are defined,
@@ -172,7 +166,7 @@ export class Material {
     bind(shader: PbrShader) {
         const gl = this.context.gl;
         const uniforms = shader.uniforms;
-        shader.bind(); // TODO!!!: avoid re-binding when already active?
+        shader.bind(); // TODO!!!: avoid re-binding when already active (sort drawing by material...)
 
         if (this.doubleSided) {
             gl.disable(gl.CULL_FACE);
@@ -180,14 +174,18 @@ export class Material {
             gl.enable(gl.CULL_FACE);
         }
 
+        // TODO!!: handle 'MASK'; ignore alpha in 'OPAQUE' mode
         if (this.alphaMode === 'BLEND') {
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         }
 
+        // TODO!!: UBO for 'factors', normalScale
         // NOTE: for sampler numbers, see also PbrShader constructor
         gl.uniform4fv(uniforms.u_BaseColorFactor!, this.baseColorFactor);
-        if (this.baseColorTexture) { this.baseColorTexture.bind(gl.TEXTURE0); }
+        if (this.baseColorTexture) {
+            this.baseColorTexture.bind(gl.TEXTURE0);
+        }
         if (this.normalTexture) {
             this.normalTexture.bind(gl.TEXTURE1);
             gl.uniform1f(uniforms.u_NormalScale, this.normalScale);
@@ -196,7 +194,9 @@ export class Material {
             this.emissiveTexture.bind(gl.TEXTURE2);
             gl.uniform3fv(uniforms.u_EmissiveFactor!, this.emissiveFactor);
         }
-        if (this.metallicRoughnessTexture) { this.metallicRoughnessTexture.bind(gl.TEXTURE3); }
+        if (this.metallicRoughnessTexture) {
+            this.metallicRoughnessTexture.bind(gl.TEXTURE3);
+        }
         gl.uniform2f(uniforms.u_MetallicRoughnessValues, this.metallicFactor, this.roughnessFactor);
         if (this.occlusionTexture) {
             this.occlusionTexture.bind(gl.TEXTURE4);

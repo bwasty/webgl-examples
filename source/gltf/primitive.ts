@@ -12,7 +12,6 @@ import { ATTRIB_LOCATIONS, PbrShader, ShaderFlags } from './pbrshader';
 
 // tslint:disable:max-classes-per-file
 
-// TODO!: move to gltf-loader-ts? GltfUtils?
 /** Spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size */
 const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
     SCALAR: 1,
@@ -103,7 +102,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         for (const semantic in gPrimitive.attributes) {
             const accessor = prim.getAccessor(gltf, gPrimitive.attributes[semantic]);
             prim.numVertices = accessor.count;
-            const bufferViewIndex = accessor.bufferView!; // TODO!: undefined case...
+            const bufferViewIndex = accessor.bufferView!; // TODO!!: undefined case ('must be initialized with zeros')
 
             let buffer;
             if (bufferViewIndex in buffersByView) {

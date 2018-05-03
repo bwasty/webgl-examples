@@ -40,7 +40,6 @@ export enum ShaderFlags {
 // tslint:disable:variable-name
 // tslint:disable:no-null-keyword
 class PbrUniformLocations {
-    // TODO!: UBO for matrices, camera, light(s)?
     u_ViewProjection: WebGLUniformLocation | null = null;
     u_ModelMatrix: WebGLUniformLocation | null = null;
     u_NormalMatrix: WebGLUniformLocation | null = null;
@@ -93,6 +92,7 @@ class PbrUniformLocations {
 
         program.bind();
         const gl = program.context.gl;
+        // TODO!: chrome warnings 'there is no texture bound to the unit 1' mostly disappear without the uniform calls..
         gl.uniform1i(this.u_BaseColorSampler, 0);
         gl.uniform1i(this.u_NormalSampler, 1);
         gl.uniform1i(this.u_EmissiveSampler, 2);
@@ -100,7 +100,6 @@ class PbrUniformLocations {
         gl.uniform1i(this.u_OcclusionSampler, 4);
 
         gl.uniform3f(this.u_LightColor, 4.0, 4.0, 4.0);
-        // TODO!: optional minus on z
         gl.uniform3f(this.u_LightDirection, 0.0, 0.5, 0.5);
 
         // gl.uniform3f(this.u_AmbientLightColor, 1.0, 1.0, 1.0);
@@ -134,10 +133,6 @@ export class PbrShader {
             }
         }
 
-        // const vert = new Shader(context, gl.VERTEX_SHADER, 'simple.vert');
-        // vert.initialize(require('./simple.vert'));
-        // const frag = new Shader(context, gl.FRAGMENT_SHADER, 'simple.frag');
-        // frag.initialize(require('./simple.frag'));
         const vert = new Shader(context, gl.VERTEX_SHADER, 'pbr-vert.glsl');
         vert.initialize(require('./shaders/pbr-vert.glsl'));
         const frag = new Shader(context, gl.FRAGMENT_SHADER, 'pbr-frag.glsl');
