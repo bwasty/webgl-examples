@@ -73,9 +73,8 @@ uniform vec3 u_Camera;
 // uniform vec4 u_ScaleIBLAmbient;
 
 varying vec3 v_Position;
-
 varying vec2 v_UV;
-
+varying vec4 v_Color;
 varying mat3 v_TBN;
 varying vec3 v_Normal;
 
@@ -154,6 +153,9 @@ if (checkFlag(HAS_NORMALMAP)) {
     // The tbn matrix is linearly interpolated, so we need to re-normalize
     n = normalize(tbn[2].xyz);
 }
+
+    // reverse backface normals
+    n *= (2.0 * float(gl_FrontFacing) - 1.0);
 
     return n;
 }
@@ -253,6 +255,9 @@ if (checkFlag(HAS_BASECOLORMAP))
     baseColor = SRGBtoLINEAR(texture(u_BaseColorSampler, v_UV)) * u_BaseColorFactor;
 else
     baseColor = u_BaseColorFactor;
+
+    // spec: COLOR_0 ... acts as an additional linear multiplier to baseColor
+    baseColor *= v_Color;
 
     vec3 f0 = vec3(0.04);
     vec3 diffuseColor = baseColor.rgb * (vec3(1.0) - f0);

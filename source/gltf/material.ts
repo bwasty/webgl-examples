@@ -170,7 +170,7 @@ export class Material {
     }
 
     bind(shader: PbrShader) {
-        const gl: WebGLRenderingContext = this.context.gl;
+        const gl = this.context.gl;
         const uniforms = shader.uniforms;
         shader.bind(); // TODO!!!: avoid re-binding when already active?
 
@@ -178,6 +178,11 @@ export class Material {
             gl.disable(gl.CULL_FACE);
         } else {
             gl.enable(gl.CULL_FACE);
+        }
+
+        if (this.alphaMode === 'BLEND') {
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         }
 
         // NOTE: for sampler numbers, see also PbrShader constructor
@@ -200,6 +205,11 @@ export class Material {
     }
 
     unbind() {
-        // TODO!! unbind material??
+        // TODO!! what to unbind?
+
+        const gl = this.context.gl;
+        if (this.alphaMode === 'BLEND') {
+            gl.disable(gl.BLEND);
+        }
     }
 }
