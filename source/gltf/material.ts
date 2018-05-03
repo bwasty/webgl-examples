@@ -34,8 +34,7 @@ export class Material {
 
     static async fromGltf(materialIndex: GLTF.GlTfId, asset: GltfAsset, context: Context): Promise<Material> {
         const gMaterial = asset.gltf.materials![materialIndex];
-        const mat = new Material();
-        mat.context = context;
+        const mat = new Material(context);
         mat.name = gMaterial.name || materialIndex.toString();
         const pbr = gMaterial.pbrMetallicRoughness;
         const texPromises: { [key: string]: Promise<Texture2> | undefined } = {
@@ -155,6 +154,10 @@ export class Material {
         return tex2;
     }
 
+    constructor(context: Context) {
+        this.context = context;
+    }
+
     get shaderFlags(): ShaderFlags {
         let flags = 0;
         if (this.baseColorTexture) { flags |= ShaderFlags.HAS_BASECOLORMAP; }
@@ -170,6 +173,12 @@ export class Material {
         const gl: WebGLRenderingContext = this.context.gl;
         const uniforms = shader.uniforms;
         shader.bind(); // TODO!!!: avoid re-binding when already active?
+
+        if (this.doubleSided) {
+            gl.disable(gl.CULL_FACE);
+        } else {
+            gl.enable(gl.CULL_FACE);
+        }
 
         // NOTE: for sampler numbers, see also PbrShader constructor
         gl.uniform4fv(uniforms.u_BaseColorFactor!, this.baseColorFactor);

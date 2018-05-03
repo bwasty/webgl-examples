@@ -1,4 +1,4 @@
-import { mat4, quat, vec3 } from 'gl-matrix';
+import { mat4, quat, vec3, mat3 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
@@ -102,6 +102,9 @@ export class Node {
         if (this.mesh) {
             const gl = this.context.gl;
             gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, this.finalTransform);
+            const normalMatrix = mat3.normalFromMat4(mat3.create(), this.finalTransform);
+            gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, normalMatrix);
+
             this.mesh.draw(shader);
         }
 

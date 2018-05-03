@@ -126,10 +126,10 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         }
 
         let shaderFlags: ShaderFlags = 0;
-        if (gPrimitive.attributes.NORMALS) { shaderFlags |= ShaderFlags.HAS_NORMALS; }
-        if (gPrimitive.attributes.TANGENT) { shaderFlags |= ShaderFlags.HAS_TANGENTS; }
-        if (gPrimitive.attributes.TEXCOORD_0) { shaderFlags |= ShaderFlags.HAS_UV; }
-        if (gPrimitive.attributes.COLOR_0) { shaderFlags |= ShaderFlags.HAS_COLORS; }
+        if (gPrimitive.attributes.NORMAL !== undefined) { shaderFlags |= ShaderFlags.HAS_NORMALS; }
+        if (gPrimitive.attributes.TANGENT !== undefined) { shaderFlags |= ShaderFlags.HAS_TANGENTS; }
+        if (gPrimitive.attributes.TEXCOORD_0 !== undefined) { shaderFlags |= ShaderFlags.HAS_UV; }
+        if (gPrimitive.attributes.COLOR_0 !== undefined) { shaderFlags |= ShaderFlags.HAS_COLORS; }
 
         if (gPrimitive.indices !== undefined) {
             const indexAccessor = prim.getAccessor(gltf, gPrimitive.indices);
@@ -160,7 +160,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             // The default material, used when a mesh does not specify a material,
             // is defined to be a material with no properties specified.
             // All the default values of material apply.
-            prim.material = new Material();
+            prim.material = new Material(context);
             prim.material.name = 'DefaultMaterial';
         } else {
             prim.material = await Material.fromGltf(gPrimitive.material, asset, prim.context);

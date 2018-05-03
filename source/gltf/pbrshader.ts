@@ -43,6 +43,7 @@ class PbrUniformLocations {
     // TODO!: UBO for matrices, camera, light(s)?
     u_ViewProjection: WebGLUniformLocation | null = null;
     u_ModelMatrix: WebGLUniformLocation | null = null;
+    u_NormalMatrix: WebGLUniformLocation | null = null;
     u_Camera: WebGLUniformLocation | null = null;
 
     u_LightDirection: WebGLUniformLocation | null = null;
@@ -98,7 +99,7 @@ class PbrUniformLocations {
         gl.uniform1i(this.u_MetallicRoughnessSampler, 3);
         gl.uniform1i(this.u_OcclusionSampler, 4);
 
-        gl.uniform3f(this.u_LightColor, 5.0, 5.0, 5.0);
+        gl.uniform3f(this.u_LightColor, 4.0, 4.0, 4.0);
         // TODO!: optional minus on z
         gl.uniform3f(this.u_LightDirection, 0.0, 0.5, 0.5);
 
