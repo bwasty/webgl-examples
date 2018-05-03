@@ -28,7 +28,7 @@ const int HAS_COLORS            = 1 << 3;
 uniform mediump int u_PbrFlags;
 uniform mat4 u_ModelMatrix;
 uniform mat4 u_ViewProjection;
-uniform mat4 u_NormalMatrix;
+uniform mat3 u_NormalMatrix;
 
 varying vec3 v_Position;
 varying vec2 v_UV;
@@ -47,7 +47,7 @@ void main()
 
   if (checkFlag(HAS_NORMALS)) {
   if (checkFlag(HAS_TANGENTS)) {
-  vec3 normalW = normalize(vec3(u_NormalMatrix * vec4(a_normal.xyz, 0.0)));
+  vec3 normalW = normalize(vec3(u_NormalMatrix * a_normal));
   vec3 tangentW = normalize(vec3(u_ModelMatrix * vec4(a_tangent.xyz, 0.0)));
   vec3 bitangentW = cross(normalW, tangentW) * a_tangent.w;
   v_TBN = mat3(tangentW, bitangentW, normalW);
@@ -56,11 +56,10 @@ void main()
   }
   }
 
-  #ifdef HAS_UV
+  if (checkFlag(HAS_UV))
   v_UV = a_texcoord_0;
-  #else
+  else
   v_UV = vec2(0.,0.);
-  #endif
 
   gl_Position = u_ViewProjection * u_ModelMatrix * a_position; // needs w for proper perspective correction
 }

@@ -1,4 +1,4 @@
-import { vec3 } from 'gl-matrix';
+import { vec3, mat4 } from 'gl-matrix';
 import { BlitPass, Camera, Context, DefaultFramebuffer,
     Framebuffer, Invalidate, MouseEventProvider, Navigation, Program,
     Renderbuffer, Renderer, Shader, Texture2, TextureCube, Wizard } from 'webgl-operate';
@@ -84,6 +84,8 @@ export class GltfRenderer extends Renderer {
         this._blit.drawBuffer = gl.BACK;
         this._blit.target = this._defaultFBO;
 
+        gl.enable(gl.DEPTH_TEST);
+
         // Initialize skyBox
 
         const internalFormatAndType = Wizard.queryInternalTextureFormat(this._context, gl.RGB, 'byte');
@@ -100,7 +102,7 @@ export class GltfRenderer extends Renderer {
         }).then(() => this.invalidate(true));
 
         setTimeout(() => {
-            this.clearColor = [0.0, 0.0, 1.0, 1.0];
+            this.clearColor = [0.1, 0.2, 0.3, 1.0];
         }, 0);
 
         return true;
@@ -163,6 +165,7 @@ export class GltfRenderer extends Renderer {
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
         this.pbrShader.bind();
+        // TODO!: only set when changed?
         gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
         gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
 
@@ -172,8 +175,8 @@ export class GltfRenderer extends Renderer {
 
         this.pbrShader.unbind();
 
-        // Render skybox
-        this._skyBox.frame();
+        // // Render skybox
+        // this._skyBox.frame();
 
         // Unbind FBO
         this._intermediateFBO.unbind();
