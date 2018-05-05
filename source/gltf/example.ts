@@ -6,7 +6,7 @@ import { GltfRenderer } from './gltfrenderer';
 import { Primitive } from './primitive';
 import { Scene } from './scene';
 
-const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/'
+const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
 // const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
 // const BASE_MODEL_URI = 'http://localhost:8080/';
 
@@ -76,6 +76,7 @@ function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
 
 async function loadScene(asset: GltfAsset, renderer: GltfRenderer) {
     console.time('asset.preFetchAll');
+    // TODO!!: fix lazy loading in gltf-loader-ts
     await asset.preFetchAll();
     console.timeEnd('asset.preFetchAll');
     // load the default or the first scene

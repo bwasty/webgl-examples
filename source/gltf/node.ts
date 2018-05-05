@@ -1,4 +1,4 @@
-import { mat4, quat, vec3, mat3 } from 'gl-matrix';
+import { mat3, mat4, quat, vec3 } from 'gl-matrix';
 import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
@@ -22,6 +22,7 @@ export class Node {
     name: string ;
 
     finalTransform: mat4 = mat4.create();
+    normalMatrix: mat3 = mat3.create();
     bounds: Aabb3;
 
     static async fromGltf(gNode: GLTF.Node, asset: GltfAsset, context: Context): Promise<Node> {
@@ -50,6 +51,7 @@ export class Node {
         // NOTE: no waiting on mesh and children in parallel because generally
         // only one of them exists on a node
         if (gNode.mesh !== undefined) {
+            // TODO!!!: create mesh only once for shared meshes...
             node.mesh = await Mesh.fromGltf(gNode.mesh, asset, context);
         }
 
@@ -73,6 +75,8 @@ export class Node {
             const m = mat4.fromRotationTranslationScale(mat4.create(), this.rotation!, this.translation!, this.scale!);
             mat4.mul(this.finalTransform, this.finalTransform, m);
         }
+
+        mat3.normalFromMat4(this.normalMatrix, this.finalTransform);
 
         for (const node of this.children) {
             node.updateTransform(this.finalTransform);
@@ -103,8 +107,7 @@ export class Node {
             const gl = this.context.gl;
             // TODO: UBO?
             gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, this.finalTransform);
-            const normalMatrix = mat3.normalFromMat4(mat3.create(), this.finalTransform);
-            gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, normalMatrix);
+            gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, this.normalMatrix);
 
             this.mesh.draw(shader);
         }
