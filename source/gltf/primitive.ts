@@ -79,13 +79,13 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     /** POINTS / LINES / TRIANGLES etc. */
     private mode: GLenum;
 
-    private material: Material;
     private shaderFlags: ShaderFlags;
     /** Currently active shader */
     private shader: PbrShader | undefined;
 
     private drawCall: () => void;
 
+    public material: Material;
     public bounds: Aabb3;
 
     static async fromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset, context: Context,
@@ -162,6 +162,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             prim.material = new Material(context);
             prim.material.name = 'DefaultMaterial';
         } else {
+            // TODO!!!: create material only ONCE...
             prim.material = await Material.fromGltf(gPrimitive.material, asset, prim.context);
         }
         prim.shaderFlags = shaderFlags | prim.material.shaderFlags;

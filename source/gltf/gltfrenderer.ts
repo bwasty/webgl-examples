@@ -1,4 +1,4 @@
-import { vec3, mat4 } from 'gl-matrix';
+import { mat4, vec3 } from 'gl-matrix';
 import { BlitPass, Camera, Context, DefaultFramebuffer,
     Framebuffer, Invalidate, MouseEventProvider, Navigation, Program,
     Renderbuffer, Renderer, Shader, Texture2, TextureCube, Wizard } from 'webgl-operate';
@@ -188,6 +188,7 @@ export class GltfRenderer extends Renderer {
     }
 
     protected setCameraFromBounds() {
+        // TODO!!!: result looks off for a number of sample models -> compare with rust viewer...
         const bounds = this._scene.bounds;
         const size = vec3.len(bounds.size);
         const center = bounds.center;

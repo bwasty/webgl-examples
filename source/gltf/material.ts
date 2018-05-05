@@ -101,7 +101,7 @@ export class Material {
         const gltf = asset.gltf;
         const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
         const texture = gltf.textures![texInfo.index];
-        // TODO!!: share re-used images? textures?
+        // TODO!!!: share re-used textures
         // NOTE: spec allows texture.source to be undefined, unclear why
         const image = await asset.imageData.get(texture.source!);
         // spec: when undefined, a sampler with repeat wrapping and auto filtering should be used.
