@@ -5,6 +5,7 @@ import { Mesh } from 'gltf-loader-ts/lib/gltf';
 import { GltfRenderer } from './gltfrenderer';
 import { Primitive } from './primitive';
 import { Scene } from './scene';
+import { Asset } from './asset';
 
 const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
 // const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
@@ -74,18 +75,17 @@ function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
     return `${baseUrl}${sample.name}/${variant}/${sample.variants[variant]}`;
 }
 
-async function loadScene(asset: GltfAsset, renderer: GltfRenderer) {
+async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
     console.time('asset.preFetchAll');
     // TODO!!: fix lazy loading in gltf-loader-ts
-    await asset.preFetchAll();
+    await gAsset.preFetchAll();
     console.timeEnd('asset.preFetchAll');
-    // load the default or the first scene
-    const gScene = asset.gltf.scenes![asset.gltf.scene || 0];
-    console.time('Scene.fromGltf');
+    console.time('asset.getScene');
     // console.profile('Scene.fromGltf');
-    const scene = await Scene.fromGltf(gScene, asset, renderer.context);
+    const asset = new Asset(gAsset, renderer.context);
+    const scene = await asset.getScene();
     // console.profileEnd();
-    console.timeEnd('Scene.fromGltf');
+    console.timeEnd('asset.getScene');
     renderer.scene = scene;
 }
 

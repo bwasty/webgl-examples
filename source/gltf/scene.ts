@@ -1,8 +1,9 @@
 import { mat4 } from 'gl-matrix';
-import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
+import { gltf as GLTF } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
+import { Asset } from './asset';
 import { Material } from './material';
 import { Node } from './node';
 import { PbrShader } from './pbrshader';
@@ -16,12 +17,12 @@ export class Scene {
     // primitivesByMaterial: Map<Material, Primitive[]> = new Map();
     bounds: Aabb3 = new Aabb3();
 
-    static async fromGltf(gScene: GLTF.Scene, asset: GltfAsset, context: Context): Promise<Scene> {
+    static async fromGltf(gScene: GLTF.Scene, asset: Asset): Promise<Scene> {
         const scene = new Scene();
         scene.name = gScene.name;
         scene.rootNodes = await Promise.all(gScene.nodes!.map((i) => {
-            const gNode = asset.gltf.nodes![i];
-            return Node.fromGltf(gNode, asset, context);
+            const gNode = asset.gAsset.gltf.nodes![i];
+            return Node.fromGltf(gNode, asset);
         }));
 
         // propagate transforms
