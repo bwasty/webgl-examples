@@ -9,16 +9,23 @@ import { Node } from './node';
 import { PbrShader } from './pbrshader';
 import { Primitive } from './primitive';
 
+interface RenderBatch {
+    node: Node;
+    primitive: Primitive;
+}
+
 export class Scene {
+    context: Context;
     name: string;
     /** all nodes */
     nodes: Node[] = [];
     rootNodes: Node[];
-    // primitivesByMaterial: Map<Material, Primitive[]> = new Map();
+    batchesByMaterial: Map<Material, RenderBatch[]> = new Map();
     bounds: Aabb3 = new Aabb3();
 
     static async fromGltf(gScene: GLTF.Scene, asset: Asset): Promise<Scene> {
         const scene = new Scene();
+        scene.context = asset.context;
         scene.name = gScene.name;
         scene.rootNodes = await Promise.all(gScene.nodes!.map((i) => {
             const gNode = asset.gAsset.gltf.nodes![i];
@@ -44,33 +51,33 @@ export class Scene {
             }
         }
 
-        // TODO!!: not enough for batching by material - also needs to be per node....
-        // gather primitives by material
-        // for (const node of scene.nodes) {
-        //     if (node.mesh === undefined) { continue; }
-        //     for (const prim of node.mesh.primitives) {
-        //         const mat = prim.material;
-        //         const primitives = scene.primitivesByMaterial.get(mat) || [];
-        //         if (primitives.length === 0) { scene.primitivesByMaterial.set(mat, primitives); }
-        //         primitives.push(prim);
-        //     }
-        // }
+        // gather primitives by material for batched drawing
+        for (const node of scene.nodes) {
+            if (node.mesh === undefined) { continue; }
+            for (const primitive of node.mesh.primitives) {
+                const mat = primitive.material;
+                const batches = scene.batchesByMaterial.get(mat) || [];
+                if (batches.length === 0) { scene.batchesByMaterial.set(mat, batches); }
+                batches.push({node, primitive});
+            }
+        }
 
         return scene;
     }
 
     draw(camera: Camera, shader: PbrShader) {
-        for (const node of this.rootNodes) {
-            node.draw(camera, shader);
+        const gl = this.context.gl;
+        shader.bind();
+        for (const [material, batches] of this.batchesByMaterial) {
+            material.bind(shader);
+            for (const {primitive, node} of batches) {
+                gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, node.finalTransform);
+                gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, node.normalMatrix);
+                primitive.draw(shader);
+            }
+            material.unbind();
         }
-        // for (const [material, primitives] of this.primitivesByMaterial) {
-        //     // TODO!!!: node...transforms...
-        //     material.bind(shader);
-        //     for (const prim of primitives) {
-        //         prim.draw(shader);
-        //     }
-        //     material.unbind();
-        // }
+        shader.unbind();
     }
 
     uninitialize() {

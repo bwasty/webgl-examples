@@ -102,21 +102,6 @@ export class Node {
         }
     }
 
-    draw(camera: Camera, shader: PbrShader) {
-        if (this.mesh) {
-            const gl = this.context.gl;
-            // TODO: UBO?
-            gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, this.finalTransform);
-            gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, this.normalMatrix);
-
-            this.mesh.draw(shader);
-        }
-
-        for (const node of this.children) {
-            node.draw(camera, shader);
-        }
-    }
-
     uninitialize() {
         if (this.mesh) {
             this.mesh.uninitialize();

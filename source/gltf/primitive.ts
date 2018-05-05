@@ -236,12 +236,10 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
     draw(shader: PbrShader): void {
         this.shader = shader;
-        this.material.bind(shader);
         this.context.gl.uniform1i(shader.uniforms.u_PbrFlags, this.shaderFlags);
         this.vertexArray.bind();
         this.drawCall();
         this.vertexArray.unbind();
-        this.material.unbind();
         this.shader = undefined;
     }
 
