@@ -1,8 +1,9 @@
 import { mat3, mat4, quat, vec3 } from 'gl-matrix';
-import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
+import { gltf as GLTF } from 'gltf-loader-ts';
 import { Camera, Context, Program } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
+import { Asset } from './asset';
 import { Mesh } from './mesh';
 import { PbrShader } from './pbrshader';
 
@@ -25,10 +26,10 @@ export class Node {
     normalMatrix: mat3 = mat3.create();
     bounds: Aabb3;
 
-    static async fromGltf(gNode: GLTF.Node, asset: GltfAsset, context: Context): Promise<Node> {
+    static async fromGltf(gNode: GLTF.Node, asset: Asset): Promise<Node> {
         const node = new Node();
         node.name = gNode.name;
-        node.context = context;
+        node.context = asset.context;
 
         if (gNode.matrix !== undefined) {
             node.matrix = mat4.fromValues.apply(undefined, gNode.matrix);
@@ -51,13 +52,12 @@ export class Node {
         // NOTE: no waiting on mesh and children in parallel because generally
         // only one of them exists on a node
         if (gNode.mesh !== undefined) {
-            // TODO!!!: create mesh only once for shared meshes...
-            node.mesh = await Mesh.fromGltf(gNode.mesh, asset, context);
+            node.mesh = await asset.getMesh(gNode.mesh);
         }
 
         if (gNode.children) {
             node.children = await Promise.all(gNode.children.map((i) => {
-                return Node.fromGltf(asset.gltf.nodes![i], asset, context);
+                return Node.fromGltf(asset.gAsset.gltf.nodes![i], asset);
             }));
         }
 

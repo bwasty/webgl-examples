@@ -1,6 +1,7 @@
 import { vec3, vec4 } from 'gl-matrix';
-import { gltf as GLTF, GltfAsset } from 'gltf-loader-ts';
+import { gltf as GLTF } from 'gltf-loader-ts';
 import { Context, Texture2 } from 'webgl-operate';
+import { Asset } from './asset';
 import { PbrShader, ShaderFlags } from './pbrshader';
 
 export type AlphaMode = 'OPAQUE' | 'MASK' | 'BLEND';
@@ -32,9 +33,9 @@ export class Material {
 
     doubleSided = false;
 
-    static async fromGltf(materialIndex: GLTF.GlTfId, asset: GltfAsset, context: Context): Promise<Material> {
-        const gMaterial = asset.gltf.materials![materialIndex];
-        const mat = new Material(context);
+    static async fromGltf(materialIndex: GLTF.GlTfId, asset: Asset): Promise<Material> {
+        const gMaterial = asset.gAsset.gltf.materials![materialIndex];
+        const mat = new Material(asset.context);
         mat.name = gMaterial.name || materialIndex.toString();
         const pbr = gMaterial.pbrMetallicRoughness;
         const texPromises: { [key: string]: Promise<Texture2> | undefined } = {
@@ -49,33 +50,33 @@ export class Material {
                 mat.baseColorFactor = vec4.fromValues.apply(undefined, pbr.baseColorFactor);
             }
             if (pbr.baseColorTexture) {
-                texPromises.baseColorTexture = this.loadTexture(pbr.baseColorTexture, asset, context,
+                texPromises.baseColorTexture = this.loadTexture(pbr.baseColorTexture, asset,
                     `mat_${mat.name}_baseColorTexture`);
             }
             if (pbr.metallicFactor !== undefined) { mat.metallicFactor = pbr.metallicFactor; }
             if (pbr.roughnessFactor !== undefined) { mat.roughnessFactor = pbr.roughnessFactor; }
             if (pbr.metallicRoughnessTexture) {
-                texPromises.metallicRoughnessTexture = this.loadTexture(pbr.metallicRoughnessTexture, asset, context,
+                texPromises.metallicRoughnessTexture = this.loadTexture(pbr.metallicRoughnessTexture, asset,
                     `mat_${mat.name}_metallicRoughnessTexture`);
             }
         }
 
         const normalTexInfo = gMaterial.normalTexture;
         if (normalTexInfo) {
-            texPromises.normalTexture = this.loadTexture(normalTexInfo, asset, context,
+            texPromises.normalTexture = this.loadTexture(normalTexInfo, asset,
                 `mat_${mat.name}_normalTexture`);
             mat.normalScale = normalTexInfo.scale || 1;
         }
 
         const occTexInfo = gMaterial.occlusionTexture;
         if (occTexInfo) {
-            texPromises.occlusionTexture = this.loadTexture(occTexInfo, asset, context,
+            texPromises.occlusionTexture = this.loadTexture(occTexInfo, asset,
                 `mat_${mat.name}_occlusionTexture`);
             mat.occlusionStrength = occTexInfo.strength || 1;
         }
 
         if (gMaterial.emissiveTexture) {
-            texPromises.emissiveTexture = this.loadTexture(gMaterial.emissiveTexture, asset, context,
+            texPromises.emissiveTexture = this.loadTexture(gMaterial.emissiveTexture, asset,
                 `mat_${mat.name}_emissiveTexture`);
         }
         if (gMaterial.emissiveFactor) {
@@ -96,20 +97,25 @@ export class Material {
     }
 
     static async loadTexture(texInfo: GLTF.TextureInfo | GLTF.MaterialNormalTextureInfo,
-            asset: GltfAsset, context: Context, identifier: string): Promise<Texture2> {
-        const gl = context.gl;
-        const gltf = asset.gltf;
+            asset: Asset, identifier: string): Promise<Texture2> {
+        const gl = asset.context.gl;
+        const gltf = asset.gAsset.gltf;
         const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
+
+        if (asset.textures[texInfo.index]) {
+            return asset.textures[texInfo.index]
+        }
+
         const texture = gltf.textures![texInfo.index];
-        // TODO!!!: share re-used textures
+
         // NOTE: spec allows texture.source to be undefined, unclear why
-        const image = await asset.imageData.get(texture.source!);
+        const image = await asset.gAsset.imageData.get(texture.source!);
         // spec: when undefined, a sampler with repeat wrapping and auto filtering should be used.
         const sampler: GLTF.Sampler = texture.sampler !== undefined ?
             gltf.samplers![texture.sampler] :
             {};
 
-        const tex2 = new Texture2(context, identifier);
+        const tex2 = new Texture2(asset.context, identifier);
         tex2.initialize(image.width, image.height, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE);
         tex2.wrap(sampler.wrapS || gl.REPEAT, sampler.wrapT || gl.REPEAT, true, false);
 
@@ -145,6 +151,9 @@ export class Material {
         //   `NEAREST_MIPMAP_LINEAR`, `LINEAR_MIPMAP_NEAREST`, or `LINEAR_MIPMAP_LINEAR`).
 
         tex2.unbind();
+
+        asset.textures[texInfo.index] = tex2;
+
         return tex2;
     }
 

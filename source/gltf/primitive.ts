@@ -2,9 +2,9 @@ import { auxiliaries, Buffer, Context, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { vec3 } from 'gl-matrix';
-import { GltfAsset } from 'gltf-loader-ts';
 import { gltf as GLTF } from 'gltf-loader-ts';
 import { Aabb3 } from './aabb3';
+import { Asset } from './asset';
 import { Material } from './material';
 import { ATTRIB_LOCATIONS, PbrShader, ShaderFlags } from './pbrshader';
 // import { Bindable } from 'webgl-operate/lib/bindable';
@@ -88,13 +88,14 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     public material: Material;
     public bounds: Aabb3;
 
-    static async fromGltf(gPrimitive: GLTF.MeshPrimitive, asset: GltfAsset, context: Context,
-        identifier?: string): Promise<Primitive> {
-        const prim = new Primitive(context, identifier);
+    static async fromGltf(gPrimitive: GLTF.MeshPrimitive, asset: Asset, identifier?: string): Promise<Primitive> {
+        const prim = new Primitive(asset.context, identifier);
         prim.mode = gPrimitive.mode || 4; // TRIANGLES (= default in spec)
 
+        const context = asset.context;
         const gl = prim.context.gl;
-        const gltf = asset.gltf;
+        const gAsset = asset.gAsset;
+        const gltf = gAsset.gltf;
         assert(gPrimitive.attributes.POSITION !== undefined, 'primitives must have the POSITION attribute');
         if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
 
@@ -108,7 +109,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             if (bufferViewIndex in buffersByView) {
                 buffer = buffersByView[bufferViewIndex];
             } else {
-                const bufferViewData = await asset.bufferViewData(bufferViewIndex);
+                const bufferViewData = await gAsset.bufferViewData(bufferViewIndex);
                 buffer = new Buffer(prim.context, `${prim.identifier}_VBO_${Object.keys(buffersByView).length}`);
                 buffer.initialize(gl.ARRAY_BUFFER);
                 buffer.data(bufferViewData, gl.STATIC_DRAW);
@@ -134,7 +135,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             const indexAccessor = prim.getAccessor(gltf, gPrimitive.indices);
             // TODO!: (undefined) When not defined, accessor must be initialized with zeros;
             // sparse property or extensions could override zeros with actual values.
-            const indexBufferData = await asset.bufferViewData(indexAccessor.bufferView!);
+            const indexBufferData = await gAsset.bufferViewData(indexAccessor.bufferView!);
             prim.indexBuffer = new Buffer(prim.context, `${prim.identifier}_EBO`);
             prim.numIndices = indexAccessor.count;
             prim.indexByteOffset = indexAccessor.byteOffset || 0;
@@ -162,8 +163,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             prim.material = new Material(context);
             prim.material.name = 'DefaultMaterial';
         } else {
-            // TODO!!!: create material only ONCE...
-            prim.material = await Material.fromGltf(gPrimitive.material, asset, prim.context);
+            prim.material = await asset.getMaterial(gPrimitive.material);
         }
         prim.shaderFlags = shaderFlags | prim.material.shaderFlags;
 
