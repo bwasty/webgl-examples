@@ -175,7 +175,6 @@ export class Material {
     bind(shader: PbrShader) {
         const gl = this.context.gl;
         const uniforms = shader.uniforms;
-        shader.bind(); // TODO!!!: avoid re-binding when already active (sort drawing by material...)
 
         if (this.doubleSided) {
             gl.disable(gl.CULL_FACE);

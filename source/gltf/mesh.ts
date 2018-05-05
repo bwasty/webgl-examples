@@ -31,12 +31,6 @@ export class Mesh {
         return mesh;
     }
 
-    draw(shader: PbrShader) {
-        for (const primitive of this.primitives) {
-            primitive.draw(shader);
-        }
-    }
-
     uninitialize() {
         for (const primitive of this.primitives) {
             primitive.uninitialize();
