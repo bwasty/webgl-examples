@@ -67,6 +67,8 @@ uniform vec4 u_BaseColorFactor;
 
 uniform vec3 u_Camera;
 
+uniform float u_AlphaBlend;
+
 // // debugging flags used for shader output of intermediate PBR variables
 // uniform vec4 u_ScaleDiffBaseMR;
 // uniform vec4 u_ScaleFGDSpec;
@@ -340,5 +342,6 @@ if (checkFlag(HAS_EMISSIVEMAP)) {
     // color = mix(color, vec3(metallic), u_ScaleDiffBaseMR.z);
     // color = mix(color, vec3(perceptualRoughness), u_ScaleDiffBaseMR.w);
 
-    fragColor = vec4(pow(color,vec3(1.0/2.2)), baseColor.a);
+    float alpha = mix(1.0, baseColor.a, u_AlphaBlend);
+    fragColor = vec4(pow(color,vec3(1.0/2.2)), alpha);
 }
