@@ -2,7 +2,7 @@ import { auxiliaries, Buffer, Context, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { vec3 } from 'gl-matrix';
-import { gltf as GLTF } from 'gltf-loader-ts';
+import { gltf as GLTF, GLTF_ELEMENTS_PER_TYPE, GltfAsset } from 'gltf-loader-ts';
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
 import { Material } from './material';
@@ -12,26 +12,15 @@ import { ATTRIB_LOCATIONS, PbrShader, ShaderFlags } from './pbrshader';
 
 // tslint:disable:max-classes-per-file
 
-/** Spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#accessor-element-size */
-const GLTF_ELEMENTS_PER_TYPE: { [index: string]: number } = {
-    SCALAR: 1,
-    VEC2:   2,
-    VEC3:   3,
-    VEC4:   4,
-    MAT2:   4,
-    MAT3:   9,
-    MAT4:  16,
-};
-
 /** Data needed for `gl.vertexAttribPointer` */
 class VertexAttribute {
-    static fromGltf(accessor: GLTF.Accessor, bufferView: GLTF.BufferView, buffer: Buffer) {
+    static fromGltf(accessor: GLTF.Accessor, byteStride: number | undefined, buffer: Buffer) {
         return new VertexAttribute(
             buffer,
             GLTF_ELEMENTS_PER_TYPE[accessor.type],
             accessor.componentType,
             accessor.normalized || false,
-            bufferView.byteStride || 0,
+            byteStride || 0,
             accessor.byteOffset || 0,
         );
     }
@@ -101,22 +90,28 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
         const buffersByView: {[bufferView: number]: Buffer} = {};
         for (const semantic in gPrimitive.attributes) {
-            const accessor = prim.getAccessor(gltf, gPrimitive.attributes[semantic]);
+            const accessorIndex = gPrimitive.attributes[semantic];
+            const accessor = gltf.accessors![accessorIndex];
             prim.numVertices = accessor.count;
-            const bufferViewIndex = accessor.bufferView!; // TODO!!: undefined case ('must be initialized with zeros')
+            const bufferViewIndex = accessor.bufferView;
 
             let buffer;
-            if (bufferViewIndex in buffersByView) {
+            let byteStride;
+            if (bufferViewIndex !== undefined && bufferViewIndex in buffersByView) {
                 buffer = buffersByView[bufferViewIndex];
+                byteStride = gltf.bufferViews[bufferViewIndex].byteStride;
             } else {
-                const bufferViewData = await gAsset.bufferViewData(bufferViewIndex);
+                const bufferViewData = await gAsset.accessorData(accessorIndex);
                 buffer = new Buffer(prim.context, `${prim.identifier}_VBO_${Object.keys(buffersByView).length}`);
                 buffer.initialize(gl.ARRAY_BUFFER);
                 buffer.data(bufferViewData, gl.STATIC_DRAW);
-                buffersByView[bufferViewIndex] = buffer;
+                if (bufferViewIndex !== undefined) {
+                    buffersByView[bufferViewIndex] = buffer;
+                    byteStride = gltf.bufferViews[bufferViewIndex].byteStride;
+                }
             }
 
-            prim.attributes[semantic] = VertexAttribute.fromGltf(accessor, gltf.bufferViews[bufferViewIndex], buffer);
+            prim.attributes[semantic] = VertexAttribute.fromGltf(accessor, byteStride, buffer);
             if (semantic === 'POSITION') {
                 prim.bounds = new Aabb3(
                     vec3.fromValues.apply(undefined, accessor.min!),
@@ -132,10 +127,8 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         if (gPrimitive.attributes.COLOR_0 !== undefined) { shaderFlags |= ShaderFlags.HAS_COLORS; }
 
         if (gPrimitive.indices !== undefined) {
-            const indexAccessor = prim.getAccessor(gltf, gPrimitive.indices);
-            // TODO!: (undefined) When not defined, accessor must be initialized with zeros;
-            // sparse property or extensions could override zeros with actual values.
-            const indexBufferData = await gAsset.bufferViewData(indexAccessor.bufferView!);
+            const indexAccessor = gltf.accessors![gPrimitive.indices];
+            const indexBufferData = await gAsset.accessorData(gPrimitive.indices);
             prim.indexBuffer = new Buffer(prim.context, `${prim.identifier}_EBO`);
             prim.numIndices = indexAccessor.count;
             prim.indexByteOffset = indexAccessor.byteOffset || 0;
@@ -177,13 +170,6 @@ export class Primitive /*extends Initializable implements Bindable*/ {
 
         this.identifier = identifier;
         this.vertexArray = new VertexArray(context, identifier + '_VAO');
-    }
-
-    private getAccessor(gltf: GLTF.GlTf, accessorId: GLTF.GlTfId): GLTF.Accessor {
-        if (gltf.accessors === undefined) { throw new Error('invalid gltf'); }
-        const acc = gltf.accessors[accessorId];
-        if (!!acc.sparse) { throw new Error('sparse accessors not implemented yet'); }
-        return acc;
     }
 
     protected bindBuffers(): void {

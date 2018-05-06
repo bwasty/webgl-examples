@@ -76,10 +76,9 @@ function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
 }
 
 async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
-    console.time('asset.preFetchAll');
-    // TODO!!: fix lazy loading in gltf-loader-ts
-    await gAsset.preFetchAll();
-    console.timeEnd('asset.preFetchAll');
+    // console.time('asset.preFetchAll');
+    // await gAsset.preFetchAll();
+    // console.timeEnd('asset.preFetchAll');
     console.time('asset.getScene');
     // console.profile('Scene.fromGltf');
     const asset = new Asset(gAsset, renderer.context);
