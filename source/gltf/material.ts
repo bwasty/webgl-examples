@@ -182,13 +182,14 @@ export class Material {
             gl.enable(gl.CULL_FACE);
         }
 
-        // TODO!!: handle 'MASK'; ignore alpha in 'OPAQUE' mode
+        // TODO!!!: handle 'MASK'; ignore alpha in 'OPAQUE' mode
         if (this.alphaMode === 'BLEND') {
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            gl.uniform1f(uniforms.u_AlphaBlend, 1.0);
         }
 
-        // TODO!!: UBO for 'factors', normalScale
+        // TODO!: UBO for 'factors', normalScale?
         // NOTE: for sampler numbers, see also PbrShader constructor
         gl.uniform4fv(uniforms.u_BaseColorFactor!, this.baseColorFactor);
         if (this.baseColorTexture) {
@@ -212,12 +213,13 @@ export class Material {
         }
     }
 
-    unbind() {
-        // TODO!! what to unbind?
+    unbind(shader: PbrShader) {
+        // TODO! what to unbind?
 
         const gl = this.context.gl;
         if (this.alphaMode === 'BLEND') {
             gl.disable(gl.BLEND);
+            gl.uniform1f(shader.uniforms.u_AlphaBlend, 0.0);
         }
     }
 }

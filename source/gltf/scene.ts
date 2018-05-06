@@ -21,6 +21,8 @@ export class Scene {
     nodes: Node[] = [];
     rootNodes: Node[];
     batchesByMaterial: Map<Material, RenderBatch[]> = new Map();
+    /** First opaque materials, then transparent ones */
+    sortedMaterials: Material[];
     bounds: Aabb3 = new Aabb3();
 
     static async fromGltf(gScene: GLTF.Scene, asset: Asset): Promise<Scene> {
@@ -62,20 +64,26 @@ export class Scene {
             }
         }
 
+        const materials = Array.from(scene.batchesByMaterial.keys());
+        const opaqueMaterials = materials.filter((m) => m.alphaMode === 'OPAQUE')
+        const transparentMaterials = materials.filter((m) => m.alphaMode !== 'OPAQUE')
+        scene.sortedMaterials = opaqueMaterials.concat(transparentMaterials);
+
         return scene;
     }
 
     draw(camera: Camera, shader: PbrShader) {
         const gl = this.context.gl;
         shader.bind();
-        for (const [material, batches] of this.batchesByMaterial) {
+        for (const material of this.sortedMaterials) {
+            const batches = this.batchesByMaterial.get(material)!;
             material.bind(shader);
             for (const {primitive, node} of batches) {
                 gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, node.finalTransform);
                 gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, node.normalMatrix);
                 primitive.draw(shader);
             }
-            material.unbind();
+            material.unbind(shader);
         }
         shader.unbind();
     }

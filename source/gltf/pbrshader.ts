@@ -74,6 +74,8 @@ class PbrUniformLocations {
     u_OcclusionSampler: WebGLUniformLocation | null = null;
     u_OcclusionStrength: WebGLUniformLocation | null = null;
 
+    u_AlphaBlend: WebGLUniformLocation | null = null;
+
     u_PbrFlags: WebGLUniformLocation | null = null;
 
     // TODO!: use/remove debugging uniforms

@@ -159,9 +159,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
             prim.material = await asset.getMaterial(gPrimitive.material);
         }
         prim.shaderFlags = shaderFlags | prim.material.shaderFlags;
-
         prim.initialize();
-        // TODO!!: do something with valid??
         return prim;
     }
 
