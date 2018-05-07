@@ -21,7 +21,7 @@ export class Aabb3 {
             vec3.transformMat4(point, point, matrix);
             vec3.min(newMin, newMin, point);
             vec3.max(newMax, newMax, point);
-        }
+        };
 
         vec3.set(point, this.min[0], this.min[1], this.min[2]), // 000
         transformPoint(matrix);

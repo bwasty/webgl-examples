@@ -2,10 +2,10 @@ import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
 import { Mesh } from 'gltf-loader-ts/lib/gltf';
+import { Asset } from './asset';
 import { GltfRenderer } from './gltfrenderer';
 import { Primitive } from './primitive';
 import { Scene } from './scene';
-import { Asset } from './asset';
 
 const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
 // const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'

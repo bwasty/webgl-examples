@@ -68,6 +68,7 @@ uniform vec4 u_BaseColorFactor;
 uniform vec3 u_Camera;
 
 uniform float u_AlphaBlend;
+uniform float u_AlphaCutoff;
 
 // // debugging flags used for shader output of intermediate PBR variables
 // uniform vec4 u_ScaleDiffBaseMR;
@@ -342,6 +343,10 @@ if (checkFlag(HAS_EMISSIVEMAP)) {
     // color = mix(color, vec3(metallic), u_ScaleDiffBaseMR.z);
     // color = mix(color, vec3(perceptualRoughness), u_ScaleDiffBaseMR.w);
 
+    // NOTE: the spec mandates to ignore any alpha value in 'OPAQUE' mode
     float alpha = mix(1.0, baseColor.a, u_AlphaBlend);
+    if (u_AlphaCutoff > 0.0) {
+        alpha = step(u_AlphaCutoff, baseColor.a);
+    }
     fragColor = vec4(pow(color,vec3(1.0/2.2)), alpha);
 }
