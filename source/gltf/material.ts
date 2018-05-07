@@ -4,7 +4,7 @@ import { Context, Texture2 } from 'webgl-operate';
 import { Asset } from './asset';
 import { PbrShader, ShaderFlags } from './pbrshader';
 
-export type AlphaMode = 'OPAQUE' | 'MASK' | 'BLEND';
+export enum AlphaMode { OPAQUE, MASK, BLEND }
 
 export class Material {
     context: Context;
@@ -29,7 +29,7 @@ export class Material {
     emissiveTexture: Texture2;
 
     alphaCutoff = 0.5;
-    alphaMode: AlphaMode = 'OPAQUE';
+    alphaMode: AlphaMode = AlphaMode.OPAQUE;
 
     doubleSided = false;
 
@@ -84,7 +84,9 @@ export class Material {
         }
 
         if (gMaterial.alphaCutoff !== undefined) { mat.alphaCutoff = gMaterial.alphaCutoff; }
-        if (gMaterial.alphaMode) { mat.alphaMode = gMaterial.alphaMode as AlphaMode; }
+        if (gMaterial.alphaMode) {
+            mat.alphaMode = (AlphaMode as any)[gMaterial.alphaMode];
+        }
 
         if (gMaterial.doubleSided !== undefined) { mat.doubleSided = gMaterial.doubleSided; }
 
@@ -103,7 +105,7 @@ export class Material {
         const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
 
         if (asset.textures[texInfo.index]) {
-            return asset.textures[texInfo.index]
+            return asset.textures[texInfo.index];
         }
 
         const texture = gltf.textures![texInfo.index];
@@ -182,11 +184,15 @@ export class Material {
             gl.enable(gl.CULL_FACE);
         }
 
-        // TODO!!!: handle 'MASK'; ignore alpha in 'OPAQUE' mode
-        if (this.alphaMode === 'BLEND') {
+        if (this.alphaMode !== AlphaMode.OPAQUE) {
+            // BLEND + MASK
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
             gl.uniform1f(uniforms.u_AlphaBlend, 1.0);
+
+            if (this.alphaMode === AlphaMode.MASK) {
+                gl.uniform1f(uniforms.u_AlphaCutoff, this.alphaCutoff);
+            }
         }
 
         // TODO!: UBO for 'factors', normalScale?
@@ -217,9 +223,12 @@ export class Material {
         // TODO! what to unbind?
 
         const gl = this.context.gl;
-        if (this.alphaMode === 'BLEND') {
+        if (this.alphaMode !== AlphaMode.OPAQUE) {
             gl.disable(gl.BLEND);
             gl.uniform1f(shader.uniforms.u_AlphaBlend, 0.0);
+            if (this.alphaMode === AlphaMode.MASK) {
+                gl.uniform1f(shader.uniforms.u_AlphaCutoff, 0);
+            }
         }
     }
 }

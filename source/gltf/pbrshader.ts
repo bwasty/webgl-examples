@@ -75,6 +75,7 @@ class PbrUniformLocations {
     u_OcclusionStrength: WebGLUniformLocation | null = null;
 
     u_AlphaBlend: WebGLUniformLocation | null = null;
+    u_AlphaCutoff: WebGLUniformLocation | null = null;
 
     u_PbrFlags: WebGLUniformLocation | null = null;
 

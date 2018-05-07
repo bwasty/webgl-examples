@@ -4,7 +4,7 @@ import { Camera, Context, Program } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
-import { Material } from './material';
+import { AlphaMode, Material } from './material';
 import { Node } from './node';
 import { PbrShader } from './pbrshader';
 import { Primitive } from './primitive';
@@ -21,7 +21,7 @@ export class Scene {
     nodes: Node[] = [];
     rootNodes: Node[];
     batchesByMaterial: Map<Material, RenderBatch[]> = new Map();
-    /** First opaque materials, then transparent ones */
+    /** First opaque materials, then (semi)transparent ones */
     sortedMaterials: Material[];
     bounds: Aabb3 = new Aabb3();
 
@@ -65,8 +65,8 @@ export class Scene {
         }
 
         const materials = Array.from(scene.batchesByMaterial.keys());
-        const opaqueMaterials = materials.filter((m) => m.alphaMode === 'OPAQUE')
-        const transparentMaterials = materials.filter((m) => m.alphaMode !== 'OPAQUE')
+        const opaqueMaterials = materials.filter((m) => m.alphaMode === AlphaMode.OPAQUE);
+        const transparentMaterials = materials.filter((m) => m.alphaMode !== AlphaMode.OPAQUE);
         scene.sortedMaterials = opaqueMaterials.concat(transparentMaterials);
 
         return scene;
