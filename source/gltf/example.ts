@@ -19,13 +19,17 @@ interface GltfSample {
     variants: {[key in GltfVariants]: string };
 }
 
-async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader, selectedModel: string) {
+async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader,
+        selectedModel: string, variant = 'glTF') {
     const url = BASE_MODEL_URI + 'model-index.json';
     const samples: GltfSample[] = await(await fetch(url)).json();
     const select = document.getElementById('sample-select') as HTMLSelectElement;
     for (const sample of samples) {
+        if (!sample.variants[variant]) {
+            continue;
+        }
         const op = new Option();
-        op.value = getSampleUrl(sample);
+        op.value = getSampleUrl(sample, '/', variant);
         op.text = sample.name;
         if (sample.name === selectedModel) {
             op.selected = true;
@@ -37,7 +41,7 @@ async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader, s
         const option = this.selectedOptions[0];
         const asset = await loader.load(BASE_MODEL_URI + option.value);
         loadScene(asset, renderer);
-        history.pushState(option.value, undefined, '?model=' + option.text);
+        history.pushState(option.value, undefined, `?model=${option.text}&variant=${variant}`);
     };
 
     window.onpopstate = async(event) => {
@@ -88,6 +92,14 @@ async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
     renderer.scene = scene;
 }
 
+function getQueryParam(param: string): string | undefined {
+    const re = new RegExp(`${param}=([^&]+)`);
+    const match = document.location.search.match(re);
+    if (match) {
+        return match[1];
+    }
+}
+
 async function onload() {
     const canvas = new gloperate.Canvas('example-canvas');
     const context = canvas.context;
@@ -97,20 +109,14 @@ async function onload() {
     const loader = new GltfLoader();
 
     let uri;
-    const match = document.location.search.match(/model=(.+)/);
-    if (match) {
-        const model = match[1];
-        uri = `${BASE_MODEL_URI}${model}/glTF/${model}.gltf`;
-        setupSampleDropdown(renderer, loader, model);
+    const model = getQueryParam('model');
+    if (model) {
+        const variant = getQueryParam('variant') || 'glTF';
+        const suffix = variant === 'glTF-Binary' ? 'glb' : 'gltf';
+        uri = `${BASE_MODEL_URI}${model}/${variant}/${model}.${suffix}`;
+        setupSampleDropdown(renderer, loader, model, variant);
     } else {
-        uri = BASE_MODEL_URI +
-            // 'BoxTextured/glTF/BoxTextured.gltf';
-            // 'Box/glTF/Box.gltf';
-            `DamagedHelmet/glTF/DamagedHelmet.gltf`;
-            // 'DamagedHelmet/glTF-Binary/DamagedHelmet.glb';
-            // 'Buggy/glTF/Buggy.gltf';
-            // 'BoomBox/glTF/BoomBox.gltf';
-
+        uri = BASE_MODEL_URI + `DamagedHelmet/glTF/DamagedHelmet.gltf`;
         setupSampleDropdown(renderer, loader, 'DamagedHelmet');
     }
 
