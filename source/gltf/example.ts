@@ -125,6 +125,8 @@ function setupDragAndDrop(loader: GltfLoader, renderer: GltfRenderer) {
 }
 
 async function onload() {
+    // TODO!!: HACK
+    (gloperate.Context as any).CONTEXT_ATTRIBUTES.depth = true;
     const canvas = new gloperate.Canvas('example-canvas');
     const context = canvas.context;
     const renderer = new GltfRenderer();
