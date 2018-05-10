@@ -1,6 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { gltf as GLTF } from 'gltf-loader-ts';
-import { Camera, Context, Program } from 'webgl-operate';
+import { Camera, Context } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
