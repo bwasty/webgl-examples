@@ -1,11 +1,9 @@
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
+import * as SimpleDropzone from 'simple-dropzone/dist/simple-dropzone';
 import * as gloperate from 'webgl-operate';
 
-import { Mesh } from 'gltf-loader-ts/lib/gltf';
 import { Asset } from './asset';
 import { GltfRenderer } from './gltfrenderer';
-import { Primitive } from './primitive';
-import { Scene } from './scene';
 
 const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
 // const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
@@ -39,27 +37,21 @@ async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader,
 
     select.onchange = async function(this: HTMLSelectElement) {
         const option = this.selectedOptions[0];
-        const asset = await loader.load(BASE_MODEL_URI + option.value);
-        loadScene(asset, renderer);
+        loadGltf(loader, BASE_MODEL_URI + option.value, renderer);
         history.pushState(option.value, undefined, `?model=${option.text}&variant=${variant}`);
     };
 
     window.onpopstate = async(event) => {
         const modelUrl = event.state;
-        console.time('GltfLoader.load');
-        const asset = await loader.load(BASE_MODEL_URI + modelUrl);
-        console.timeEnd('GltfLoader.load');
-        loadScene(asset, renderer);
+        loadGltf(loader, BASE_MODEL_URI + modelUrl, renderer);
     };
 
     (window as any).cycleModels = async(delayMs?: number) => {
         const select = document.getElementById('sample-select') as HTMLSelectElement;
-        const numOptions = select.options.length;
         for (const option of Array.from(select.options)) {
             console.log(option.text);
-            const asset = await loader.load(BASE_MODEL_URI + option.value);
             try {
-                await loadScene(asset, renderer);
+                await loadGltf(loader, BASE_MODEL_URI + option.value, renderer);
             } catch (e) {
                 console.error(e);
             }
@@ -80,9 +72,6 @@ function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
 }
 
 async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
-    // console.time('asset.preFetchAll');
-    // await gAsset.preFetchAll();
-    // console.timeEnd('asset.preFetchAll');
     console.time('asset.getScene');
     // console.profile('Scene.fromGltf');
     const asset = new Asset(gAsset, renderer.context);
@@ -92,12 +81,47 @@ async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
     renderer.scene = scene;
 }
 
+async function loadGltf(loader: GltfLoader, uri: string, renderer: GltfRenderer) {
+    try {
+        console.time('GltfLoader.load');
+        const gAsset = await loader.load(uri);
+        console.timeEnd('GltfLoader.load');
+        // console.time('asset.preFetchAll');
+        // await gAsset.preFetchAll();
+        // console.timeEnd('asset.preFetchAll');
+        loadScene(gAsset, renderer);
+    } catch (e) {
+        console.error(e);
+        if (typeof e === 'string') {
+            alert(e);
+        } else {
+            const detail = e.status ? ` (${e.status} ${e.statusText} ${e.url})` : '';
+            alert(`Error loading glTF` + detail);
+        }
+    }
+}
+
 function getQueryParam(param: string): string | undefined {
     const re = new RegExp(`${param}=([^&]+)`);
     const match = document.location.search.match(re);
     if (match) {
         return match[1];
     }
+}
+
+function setupDragAndDrop(loader: GltfLoader, renderer: GltfRenderer) {
+    const canvas = document.getElementById('example-canvas');
+    const input = document.getElementById('file-input');
+    const dropzone = new SimpleDropzone(canvas, input);
+
+    dropzone.on('drop', async({files}: {files: Map<string, File>}) => {
+        const asset = await loader.loadFromFiles(files);
+        loadScene(asset, renderer);
+    });
+
+    dropzone.on('droperror', ({message}: {message: string}) => {
+        alert(`Error: ${message}`);
+    });
 }
 
 async function onload() {
@@ -120,10 +144,9 @@ async function onload() {
         setupSampleDropdown(renderer, loader, 'DamagedHelmet');
     }
 
-    console.time('GltfLoader.load');
-    const asset = await loader.load(uri);
-    console.timeEnd('GltfLoader.load');
-    loadScene(asset, renderer);
+    setupDragAndDrop(loader, renderer);
+
+    loadGltf(loader, uri, renderer);
 
     canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));

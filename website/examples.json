@@ -34,10 +34,7 @@
             "cgcostume",
             "chistopher"
         ],
-<<<<<<< HEAD
         "caption": ""
-=======
-        "caption": "D Some quick example text to build on the card title and make up the bulk of the ..."
     },
     {
         "target": "gltf",
@@ -46,6 +43,5 @@
             "bwasty"
         ],
         "caption": "glTF 2.0 example with PBR shading"
->>>>>>> stub gltf example
     }
 ]
