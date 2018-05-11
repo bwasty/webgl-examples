@@ -60,18 +60,23 @@ class PbrUniformLocations {
     ///
 
     u_BaseColorSampler: WebGLUniformLocation | null = null;
+    u_BaseColorTexCoord: WebGLUniformLocation | null = null;
     u_BaseColorFactor: WebGLUniformLocation | null = null;
 
     u_NormalSampler: WebGLUniformLocation | null = null;
+    u_NormalTexCoord: WebGLUniformLocation | null = null;
     u_NormalScale: WebGLUniformLocation | null = null;
 
     u_EmissiveSampler: WebGLUniformLocation | null = null;
+    u_EmissiveTexCoord: WebGLUniformLocation | null = null;
     u_EmissiveFactor: WebGLUniformLocation | null = null;
 
     u_MetallicRoughnessSampler: WebGLUniformLocation | null = null;
+    u_MetallicRoughnessTexCoord: WebGLUniformLocation | null = null;
     u_MetallicRoughnessValues: WebGLUniformLocation | null = null;
 
     u_OcclusionSampler: WebGLUniformLocation | null = null;
+    u_OcclusionTexCoord: WebGLUniformLocation | null = null;
     u_OcclusionStrength: WebGLUniformLocation | null = null;
 
     u_AlphaBlend: WebGLUniformLocation | null = null;

@@ -8,14 +8,14 @@
   attribute vec4 a_normal;
   attribute vec4 a_tangent;
   attribute vec2 a_texcoord_0;
-  // attribute vec2 a_texcoord_1;
+  attribute vec2 a_texcoord_1;
   attribute vec4 a_color;
 #else
     layout (location = 0) in vec4 a_position;
     layout (location = 1) in vec3 a_normal;
     layout (location = 2) in vec4 a_tangent;
     layout (location = 3) in vec2 a_texcoord_0;
-    // layout (location = 4) in vec2 a_texcoord_1;
+    layout (location = 4) in vec2 a_texcoord_1;
     layout (location = 5) in vec4 a_color;
 #endif
 
@@ -32,7 +32,7 @@ uniform mat4 u_ViewProjection;
 uniform mat3 u_NormalMatrix;
 
 varying vec3 v_Position;
-varying vec2 v_UV;
+varying vec2 v_UV[2];
 varying vec4 v_Color;
 
 varying mat3 v_TBN;
@@ -58,10 +58,14 @@ void main()
   }
   }
 
-  if (checkFlag(HAS_UV))
-  v_UV = a_texcoord_0;
-  else
-  v_UV = vec2(0.,0.);
+  if (checkFlag(HAS_UV)) {
+    v_UV[0] = a_texcoord_0;
+    v_UV[1] = a_texcoord_1;
+  }
+  else {
+    v_UV[0] = vec2(0., 0.);
+    v_UV[1] = vec2(0., 0.);
+  }
 
   if (checkFlag(HAS_COLORS))
   v_Color = a_color;
