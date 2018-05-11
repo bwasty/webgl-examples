@@ -2,7 +2,8 @@ extends example.pug
 
 
 block canvas
-  canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
+  div(id='canvas-container' style='position: relative')
+    canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
   a(href='https://github.com/KhronosGroup/glTF-Sample-Models/blob/master/2.0/README.md') glTF-Sample-Models
   | :
   select(id = 'sample-select' style='margin-left: 5px')

@@ -1,3 +1,4 @@
+import * as dat from 'dat.gui';
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as SimpleDropzone from 'simple-dropzone/dist/simple-dropzone';
 import * as gloperate from 'webgl-operate';
@@ -10,11 +11,11 @@ const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Samp
 // const BASE_MODEL_URI = 'http://localhost:8080/';
 
 // tslint:disable:no-console
-type GltfVariants = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
+type GltfVariant = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
 interface GltfSample {
     name: string;
     screenshot: string;
-    variants: {[key in GltfVariants]: string };
+    variants: {[key in GltfVariant]: string };
 }
 
 async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader,
@@ -124,6 +125,42 @@ function setupDragAndDrop(loader: GltfLoader, renderer: GltfRenderer) {
     });
 }
 
+class GuiOptions  {
+    // tslint:disable-next-line:variable-name
+    Sample = 'DamagedHelmet';
+    // tslint:disable-next-line:variable-name
+    Variant: GltfVariant = 'glTF';
+    CycleModels() {
+        // TODO!
+    }
+    // TODO!, file input
+}
+
+
+function setupDatGUI(renderer: GltfRenderer) {
+    const gui = new dat.GUI({autoPlace: false, width: 220});
+    const options = new GuiOptions();
+
+    // TODO!!!: fill with real samples and add event listeners...
+    gui.add(options, 'Sample', ['DamagedHelmet', 'Box']);
+
+    const advanced = gui.addFolder('Advanced');
+    advanced.add(options, 'Variant', ['glTF', 'glTF-Binary']);
+    advanced.add(options, 'CycleModels');
+
+    const perfFolder = gui.addFolder('Performance');
+    const perfLi = document.createElement('li');
+    renderer.stats.dom.style.position = 'static';
+    perfLi.appendChild(renderer.stats.dom);
+    perfLi.classList.add('dat-gui-stats');
+    (perfFolder as any).__ul.appendChild(perfLi);
+
+    const guiWrap = document.createElement('div');
+    document.getElementById('canvas-container')!.appendChild(guiWrap);
+    guiWrap.classList.add('dat-gui-wrap');
+    guiWrap.appendChild(gui.domElement);
+}
+
 async function onload() {
     // TODO!!: HACK
     (gloperate.Context as any).CONTEXT_ATTRIBUTES.depth = true;
@@ -147,6 +184,7 @@ async function onload() {
     }
 
     setupDragAndDrop(loader, renderer);
+    setupDatGUI(renderer);
 
     loadGltf(loader, uri, renderer);
 

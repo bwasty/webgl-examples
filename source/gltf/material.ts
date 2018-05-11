@@ -102,7 +102,7 @@ export class Material {
             asset: Asset, identifier: string): Promise<Texture2> {
         const gl = asset.context.gl;
         const gltf = asset.gAsset.gltf;
-        const texCoord = texInfo.texCoord || 0; // TODO!!: use/handle
+        const texCoord = texInfo.texCoord || 0; // TODO!!!: use/handle
 
         if (asset.textures[texInfo.index]) {
             return asset.textures[texInfo.index];
