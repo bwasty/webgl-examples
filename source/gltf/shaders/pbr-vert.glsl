@@ -19,7 +19,7 @@
     layout (location = 5) in vec4 a_color;
 #endif
 
-// TODO!!: WebGL1 support (int/bit operators...)
+// TODO!!!: WebGL1 support (int/bit operators...)
 // vertex shader + fragment shader
 const int HAS_NORMALS           = 1;
 const int HAS_TANGENTS          = 1 << 1;
