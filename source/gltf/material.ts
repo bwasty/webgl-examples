@@ -16,17 +16,22 @@ export class Material {
     // pbr_metallic_roughness properties
     baseColorFactor: vec4 = vec4.fromValues(1, 1, 1, 1);
     baseColorTexture: Texture2;
+    baseColorTexCoord: number;
     metallicFactor = 1;
     roughnessFactor = 1;
     metallicRoughnessTexture: Texture2;
+    metallicRoughnessTexCoord: number;
 
     normalTexture: Texture2;
+    normalTexCoord: number;
     normalScale: number;
 
     occlusionTexture: Texture2;
+    occlusionTexCoord: number;
     occlusionStrength: number;
     emissiveFactor: vec3 = vec3.fromValues(0, 0, 0);
     emissiveTexture: Texture2;
+    emissiveTexCoord: number;
 
     alphaCutoff = 0.5;
     alphaMode: AlphaMode = AlphaMode.OPAQUE;
@@ -52,12 +57,14 @@ export class Material {
             if (pbr.baseColorTexture) {
                 texPromises.baseColorTexture = this.loadTexture(pbr.baseColorTexture, asset,
                     `mat_${mat.name}_baseColorTexture`);
+                mat.baseColorTexCoord = pbr.baseColorTexture.texCoord || 0;
             }
             if (pbr.metallicFactor !== undefined) { mat.metallicFactor = pbr.metallicFactor; }
             if (pbr.roughnessFactor !== undefined) { mat.roughnessFactor = pbr.roughnessFactor; }
             if (pbr.metallicRoughnessTexture) {
                 texPromises.metallicRoughnessTexture = this.loadTexture(pbr.metallicRoughnessTexture, asset,
                     `mat_${mat.name}_metallicRoughnessTexture`);
+                mat.metallicRoughnessTexCoord = pbr.metallicRoughnessTexture.texCoord || 0;
             }
         }
 
@@ -65,6 +72,7 @@ export class Material {
         if (normalTexInfo) {
             texPromises.normalTexture = this.loadTexture(normalTexInfo, asset,
                 `mat_${mat.name}_normalTexture`);
+            mat.normalTexCoord = normalTexInfo.texCoord || 0;
             mat.normalScale = normalTexInfo.scale || 1;
         }
 
@@ -72,12 +80,14 @@ export class Material {
         if (occTexInfo) {
             texPromises.occlusionTexture = this.loadTexture(occTexInfo, asset,
                 `mat_${mat.name}_occlusionTexture`);
+            mat.occlusionTexCoord = occTexInfo.texCoord || 0;
             mat.occlusionStrength = occTexInfo.strength || 1;
         }
 
         if (gMaterial.emissiveTexture) {
             texPromises.emissiveTexture = this.loadTexture(gMaterial.emissiveTexture, asset,
                 `mat_${mat.name}_emissiveTexture`);
+            mat.emissiveTexCoord = gMaterial.emissiveTexture.texCoord || 0;
         }
         if (gMaterial.emissiveFactor) {
             mat.emissiveFactor = vec3.fromValues.apply(undefined, gMaterial.emissiveFactor);
@@ -102,7 +112,6 @@ export class Material {
             asset: Asset, identifier: string): Promise<Texture2> {
         const gl = asset.context.gl;
         const gltf = asset.gAsset.gltf;
-        const texCoord = texInfo.texCoord || 0; // TODO!!!: use/handle
 
         if (asset.textures[texInfo.index]) {
             return asset.textures[texInfo.index];
@@ -200,21 +209,26 @@ export class Material {
         gl.uniform4fv(uniforms.u_BaseColorFactor!, this.baseColorFactor);
         if (this.baseColorTexture) {
             this.baseColorTexture.bind(gl.TEXTURE0);
+            gl.uniform1i(uniforms.u_BaseColorTexCoord, this.baseColorTexCoord);
         }
         if (this.normalTexture) {
             this.normalTexture.bind(gl.TEXTURE1);
+            gl.uniform1i(uniforms.u_NormalTexCoord, this.normalTexCoord);
             gl.uniform1f(uniforms.u_NormalScale, this.normalScale);
         }
         if (this.emissiveTexture) {
             this.emissiveTexture.bind(gl.TEXTURE2);
+            gl.uniform1i(uniforms.u_EmissiveTexCoord, this.emissiveTexCoord);
             gl.uniform3fv(uniforms.u_EmissiveFactor!, this.emissiveFactor);
         }
         if (this.metallicRoughnessTexture) {
             this.metallicRoughnessTexture.bind(gl.TEXTURE3);
+            gl.uniform1i(uniforms.u_MetallicRoughnessTexCoord, this.metallicRoughnessTexCoord);
         }
         gl.uniform2f(uniforms.u_MetallicRoughnessValues, this.metallicFactor, this.roughnessFactor);
         if (this.occlusionTexture) {
             this.occlusionTexture.bind(gl.TEXTURE4);
+            gl.uniform1i(uniforms.u_OcclusionTexCoord, this.occlusionTexCoord);
             gl.uniform1f(uniforms.u_OcclusionStrength, this.occlusionStrength);
         }
     }
