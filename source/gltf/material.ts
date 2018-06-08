@@ -152,7 +152,7 @@ export class Material {
             gl.generateMipmap(gl.TEXTURE_2D);
         }
 
-        // TODO!!: NPOT handling:
+        // TODO!!: NPOT handling (hint: three.js resizes by rendering the into a 2D canvas...)
         // **Non-Power-Of-Two Texture Implementation Note**: glTF does not guarantee that a texture's
         // dimensions are a power-of-two.  At runtime, if a texture's width or height is not a
         // power-of-two, the texture needs to be resized so its dimensions are powers-of-two if the
@@ -204,7 +204,6 @@ export class Material {
             }
         }
 
-        // TODO!: UBO for 'factors', normalScale?
         // NOTE: for sampler numbers, see also PbrShader constructor
         gl.uniform4fv(uniforms.u_BaseColorFactor!, this.baseColorFactor);
         if (this.baseColorTexture) {
@@ -234,8 +233,6 @@ export class Material {
     }
 
     unbind(shader: PbrShader) {
-        // TODO! what to unbind?
-
         const gl = this.context.gl;
         if (this.alphaMode !== AlphaMode.OPAQUE) {
             gl.disable(gl.BLEND);

@@ -115,7 +115,6 @@ export class GltfRenderer extends Renderer {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         this.pbrShader.bind();
-        // TODO!: only set when changed?
         gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
         gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
 

@@ -44,7 +44,7 @@ const int USE_TEX_LOD           = 1 << 10;
 uniform vec3 u_LightDirection;
 uniform vec3 u_LightColor;
 
-// TODO!? ambient light (see gltf-viewer)
+// TODO!: ambient light or only IBL? (see gltf-viewer)
 
 #ifdef USE_IBL
 uniform samplerCube u_DiffuseEnvSampler;

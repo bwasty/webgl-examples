@@ -42,13 +42,13 @@ class VertexAttribute {
             this.normalized,
             this.stride,
             this.offset,
-            true, // TODO!: param?
+            true,
             false,
         );
     }
 
     disable(index: GLuint) {
-        this.buffer.attribDisable(index, true, true); // TODO!: param?
+        this.buffer.attribDisable(index, false, true);
     }
 }
 

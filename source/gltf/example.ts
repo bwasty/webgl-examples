@@ -86,7 +86,6 @@ class GuiOptions  {
     Sample = 'DamagedHelmet';
     // tslint:disable-next-line:variable-name
     Variant: GltfVariant = 'glTF';
-    // TODO: file input? cycleModels function?
 }
 
 
@@ -182,7 +181,7 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
 }
 
 async function onload() {
-    // TODO!!: HACK
+    // TODO!!: HACK - see https://github.com/cginternals/webgl-operate/issues/68
     (gloperate.Context as any).CONTEXT_ATTRIBUTES.depth = true;
     const canvas = new gloperate.Canvas('example-canvas');
     const context = canvas.context;
