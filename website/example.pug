@@ -6,10 +6,20 @@ html(lang = 'en')
 
   include partials/head.pug
 
+  link(rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.12.0/build/styles/default.min.css")
+  style.
+      .hljs {
+        background: initial;
+      }
+  script(src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js")
+  script(src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/typescript.min.js")
+  script.
+      hljs.initHighlightingOnLoad();
+
   body.bg-light
-  
+
     include partials/navbar.pug
-   
+
     include partials/authors.pug
     section.container
       block canvas
@@ -18,7 +28,7 @@ html(lang = 'en')
       div.row
         div.col
           h2 #{example.title.toUpperCase()}&ensp;|&ensp;Source Code Breakdown
-          p.lead Example using #[a(href = 'https://github.com/cginternals/webgl-operate') webgl-operate] by 
+          p.lead Example using #[a(href = 'https://github.com/cginternals/webgl-operate') webgl-operate] by
             +authors(example.authors)
             |#{'.'}
           hr

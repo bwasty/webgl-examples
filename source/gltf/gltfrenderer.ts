@@ -64,7 +64,7 @@ export class GltfRenderer extends Renderer {
         (this.stats.dom as any).height = '48px';
         (this.stats.dom as any).top = '12px';
         [].forEach.call(this.stats.dom.children, (child: any) => (child.style.display = ''));
-        // // 0: fps, 1: ms, 2: mb, 3+: custom
+        // 0: fps, 1: ms, 2: mb, 3+: custom
         (this.stats.dom.children[2] as any).style.display = 'none';
 
         return true;

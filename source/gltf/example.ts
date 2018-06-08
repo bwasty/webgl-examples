@@ -6,10 +6,10 @@ import * as gloperate from 'webgl-operate';
 import { Asset } from './asset';
 import { GltfRenderer } from './gltfrenderer';
 
-// const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
+const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
 // For faster local testing, clone the sample repo and start a server there, e.g. with `http-server --cors`
 // (-> `npm i -g http-server)
-const BASE_MODEL_URI = 'http://localhost:8080/';
+// const BASE_MODEL_URI = 'http://localhost:8080/';
 
 // tslint:disable:no-console
 type GltfVariant = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
@@ -30,10 +30,8 @@ function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
 
 async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
     console.time('asset.getScene');
-    // console.profile('Scene.fromGltf');
     const asset = new Asset(gAsset, renderer.context);
     const scene = await asset.getScene();
-    // console.profileEnd();
     console.timeEnd('asset.getScene');
     renderer.scene = scene;
 }
@@ -164,7 +162,8 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
         loadGltf(loader, modelUrl, renderer);
     };
 
-
+    // for interactive 'integration testing' - load all samples and optionally
+    // wait a bit in between
     (window as any).cycleModels = async(delayMs?: number) => {
         for (const sample of samples) {
             console.log(sample.name);
