@@ -6,9 +6,10 @@ import * as gloperate from 'webgl-operate';
 import { Asset } from './asset';
 import { GltfRenderer } from './gltfrenderer';
 
-const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
-// const BASE_MODEL_URI = 'https://raw.githubusercontent.com/bwasty/glTF-Sample-Models/generate_index/2.0/'
-// const BASE_MODEL_URI = 'http://localhost:8080/';
+// const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
+// For faster local testing, clone the sample repo and start a server there, e.g. with `http-server --cors`
+// (-> `npm i -g http-server)
+const BASE_MODEL_URI = 'http://localhost:8080/';
 
 // tslint:disable:no-console
 type GltfVariant = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
@@ -16,51 +17,6 @@ interface GltfSample {
     name: string;
     screenshot: string;
     variants: {[key in GltfVariant]: string };
-}
-
-async function setupSampleDropdown(renderer: GltfRenderer, loader: GltfLoader,
-        selectedModel: string, variant = 'glTF') {
-    const url = BASE_MODEL_URI + 'model-index.json';
-    const samples: GltfSample[] = await(await fetch(url)).json();
-    const select = document.getElementById('sample-select') as HTMLSelectElement;
-    for (const sample of samples) {
-        if (!sample.variants[variant]) {
-            continue;
-        }
-        const op = new Option();
-        op.value = getSampleUrl(sample, '/', variant);
-        op.text = sample.name;
-        if (sample.name === selectedModel) {
-            op.selected = true;
-        }
-        select.options.add(op);
-    }
-
-    select.onchange = async function(this: HTMLSelectElement) {
-        const option = this.selectedOptions[0];
-        loadGltf(loader, BASE_MODEL_URI + option.value, renderer);
-        history.pushState(option.value, undefined, `?model=${option.text}&variant=${variant}`);
-    };
-
-    window.onpopstate = async(event) => {
-        const modelUrl = event.state;
-        loadGltf(loader, BASE_MODEL_URI + modelUrl, renderer);
-    };
-
-    (window as any).cycleModels = async(delayMs?: number) => {
-        const select = document.getElementById('sample-select') as HTMLSelectElement;
-        for (const option of Array.from(select.options)) {
-            console.log(option.text);
-            try {
-                await loadGltf(loader, BASE_MODEL_URI + option.value, renderer);
-            } catch (e) {
-                console.error(e);
-            }
-            if (delayMs !== undefined) {
-                await delay(delayMs);
-            }
-        }
-    };
 }
 
 function delay(ms: number) {
@@ -87,9 +43,9 @@ async function loadGltf(loader: GltfLoader, uri: string, renderer: GltfRenderer)
         console.time('GltfLoader.load');
         const gAsset = await loader.load(uri);
         console.timeEnd('GltfLoader.load');
-        // console.time('asset.preFetchAll');
-        // await gAsset.preFetchAll();
-        // console.timeEnd('asset.preFetchAll');
+        console.time('asset.preFetchAll');
+        await gAsset.preFetchAll();
+        console.timeEnd('asset.preFetchAll');
         loadScene(gAsset, renderer);
     } catch (e) {
         console.error(e);
@@ -130,35 +86,99 @@ class GuiOptions  {
     Sample = 'DamagedHelmet';
     // tslint:disable-next-line:variable-name
     Variant: GltfVariant = 'glTF';
-    CycleModels() {
-        // TODO!
-    }
-    // TODO!, file input
+    // TODO: file input? cycleModels function?
 }
 
 
-function setupDatGUI(renderer: GltfRenderer) {
-    const gui = new dat.GUI({autoPlace: false, width: 220});
-    const options = new GuiOptions();
+// https://stackoverflow.com/a/45699568
+function updateDatDropdown(target: any, list: any) {
+    let innerHTMLStr = '';
+    if (list.constructor.name === 'Array') {
+        // tslint:disable-next-line:prefer-for-of
+        for (let i = 0; i < list.length; i++) {
+            const str = '<option value=\'' + list[i] + '\'>' + list[i] + '</option>';
+            innerHTMLStr += str;
+        }
+    }
 
-    // TODO!!!: fill with real samples and add event listeners...
-    gui.add(options, 'Sample', ['DamagedHelmet', 'Box']);
+    if (list.constructor.name === 'Object') {
+        for (const key in list){
+            const str = '<option value=\'' + list[key] + '\'>' + key + '</option>';
+            innerHTMLStr += str;
+        }
+    }
+    if (innerHTMLStr !== '') { target.domElement.children[0].innerHTML = innerHTMLStr; }
+}
+
+async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
+    const gui = new dat.GUI({autoPlace: false, width: 310});
+    const options = new GuiOptions();
+    options.Sample = getQueryParam('model') || 'DamagedHelmet';
+
+    const samples: GltfSample[] = await(await fetch(BASE_MODEL_URI + 'model-index.json')).json();
+    const sampleNames = samples.map((s) => s.name);
+    const selectedSample = samples.find(((s) => s.name === options.Sample))!;
+    const sampleCtrl = gui.add(options, 'Sample', sampleNames);
 
     const advanced = gui.addFolder('Advanced');
-    advanced.add(options, 'Variant', ['glTF', 'glTF-Binary']);
-    advanced.add(options, 'CycleModels');
+    const variantCtrl = advanced.add(options, 'Variant', Object.keys(selectedSample.variants));
+    advanced.open();
 
-    const perfFolder = gui.addFolder('Performance');
+    sampleCtrl.onChange((sampleName: string) => {
+        const sample = samples.find(((s) => s.name === sampleName))!;
+        let variant = variantCtrl.getValue();
+        if (!(variant in sample.variants)) {
+            console.warn(`Model doesn't have variant ${variant}, resetting to glTF`);
+            variant = 'glTF';
+            variantCtrl.setValue(variant);
+        }
+        const url = getSampleUrl(sample, BASE_MODEL_URI, variant);
+        loadGltf(loader, url, renderer);
+        history.pushState(url, undefined, `?model=${sampleName}&variant=${variant}`);
+        updateDatDropdown(variantCtrl, Object.keys(sample.variants));
+        variantCtrl.setValue(variant);
+    });
+
+    variantCtrl.onChange((variant: string) => {
+        const sampleName = sampleCtrl.getValue();
+        const sample = samples.find(((s) => s.name === sampleName))!;
+        const url = getSampleUrl(sample, BASE_MODEL_URI, variant);
+        loadGltf(loader, url, renderer);
+        history.pushState(url, undefined, `?model=${sampleName}&variant=${variant}`);
+    });
+
+    const perfFolder = advanced.addFolder('Performance');
     const perfLi = document.createElement('li');
     renderer.stats.dom.style.position = 'static';
     perfLi.appendChild(renderer.stats.dom);
     perfLi.classList.add('dat-gui-stats');
     (perfFolder as any).__ul.appendChild(perfLi);
+    perfFolder.open();
 
     const guiWrap = document.createElement('div');
     document.getElementById('canvas-container')!.appendChild(guiWrap);
     guiWrap.classList.add('dat-gui-wrap');
     guiWrap.appendChild(gui.domElement);
+
+    window.onpopstate = async(event) => {
+        const modelUrl = event.state;
+        loadGltf(loader, modelUrl, renderer);
+    };
+
+
+    (window as any).cycleModels = async(delayMs?: number) => {
+        for (const sample of samples) {
+            console.log(sample.name);
+            try {
+                await loadGltf(loader, getSampleUrl(sample, BASE_MODEL_URI, variantCtrl.getValue()), renderer);
+            } catch (e) {
+                console.error(e);
+            }
+            if (delayMs !== undefined) {
+                await delay(delayMs);
+            }
+        }
+    };
 }
 
 async function onload() {
@@ -177,14 +197,13 @@ async function onload() {
         const variant = getQueryParam('variant') || 'glTF';
         const suffix = variant === 'glTF-Binary' ? 'glb' : 'gltf';
         uri = `${BASE_MODEL_URI}${model}/${variant}/${model}.${suffix}`;
-        setupSampleDropdown(renderer, loader, model, variant);
     } else {
         uri = BASE_MODEL_URI + `DamagedHelmet/glTF/DamagedHelmet.gltf`;
-        setupSampleDropdown(renderer, loader, 'DamagedHelmet');
     }
 
     setupDragAndDrop(loader, renderer);
-    setupDatGUI(renderer);
+
+    setupDatGUI(renderer, loader);
 
     loadGltf(loader, uri, renderer);
 
