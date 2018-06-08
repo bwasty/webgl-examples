@@ -12,7 +12,6 @@ export class Asset {
     context: Context;
 
     scenes: Scene[] = [];
-    // nodes: Node[];
     meshes: Mesh[] = [];
     materials: Material[] = [];
     textures: Texture2[] = [];

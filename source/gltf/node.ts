@@ -12,7 +12,7 @@ export class Node {
     mesh: Mesh | undefined;
     children: Node[] = [];
 
-    // a node can eiter have a matrix, or T,R,S properties
+    // a node can either have a matrix, or T,R,S properties
     matrix: mat4 | undefined;
     translation: vec3 | undefined;
     rotation: quat | undefined;
