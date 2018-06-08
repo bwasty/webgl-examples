@@ -4,13 +4,11 @@ extends example.pug
 block canvas
   div(id='canvas-container' style='position: relative')
     canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
-  a(href='https://github.com/KhronosGroup/glTF-Sample-Models/blob/master/2.0/README.md') glTF-Sample-Models
-  | :
-  select(id = 'sample-select' style='margin-left: 5px')
+  input(id='file-input' type='file' multiple style='float: right')
   p
   p
-    | Select files or drag onto canvas:
-    input(id='file-input' type='file' multiple style='margin-left: 5px')
+    | Select a #[a(href='https://github.com/KhronosGroup/glTF-Sample-Models/blob/master/2.0/README.md') sample model]
+    | from the dropdown, use the file input or drag file(s), folders or zip files onto the canvas.
 
 block breakdown
   p glTF 2.0 Example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader].
