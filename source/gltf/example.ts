@@ -119,7 +119,6 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
 
     const advanced = gui.addFolder('Advanced');
     const variantCtrl = advanced.add(options, 'Variant', Object.keys(selectedSample.variants));
-    advanced.open();
 
     sampleCtrl.onChange((sampleName: string) => {
         const sample = samples.find(((s) => s.name === sampleName))!;

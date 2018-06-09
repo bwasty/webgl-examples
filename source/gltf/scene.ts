@@ -74,7 +74,6 @@ export class Scene {
 
     draw(camera: Camera, shader: PbrShader) {
         const gl = this.context.gl;
-        shader.bind();
         for (const material of this.sortedMaterials) {
             const batches = this.batchesByMaterial.get(material)!;
             material.bind(shader);
@@ -85,7 +84,6 @@ export class Scene {
             }
             material.unbind(shader);
         }
-        shader.unbind();
     }
 
     uninitialize() {

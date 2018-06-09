@@ -4,19 +4,76 @@ extends example.pug
 block canvas
   div(id='canvas-container' style='position: relative')
     canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
-  input(id='file-input' type='file' multiple style='float: right')
+  input(id='file-input' type='file' multiple)
   p
+  p
+    | glTF 2.0 Example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader].
   p
     | Select a #[a(href='https://github.com/KhronosGroup/glTF-Sample-Models/blob/master/2.0/README.md') sample model]
     | from the dropdown, use the file input or drag file(s), folders or zip files onto the canvas.
 
 block breakdown
-  p glTF 2.0 Example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader].
-
+  p
+    | The full source can be found #[a(href="https://github.com/cginternals/webgl-examples/tree/gltf/source/gltf") here].
+    | Much of it may eventually be integrated in webgl-operate - for now it's recommended to copy the files to your project.
+    | Here are the essential parts in a few snippets:
   include partials/code.pug
-  +code('example-code', 'Loading a glTF file:')
+  +code('example-code', 'Setting up the renderer (example.ts)')
+    | import { Canvas } from 'webgl-operate';
+    | import { GltfRenderer } from './gltfrenderer';
+    | const canvas = new Canvas('example-canvas');
+    | canvas.renderer = renderer;
+
+  | We're using #[a(href="https://www.npmjs.com/package/gltf-loader-ts") gltf-loader-ts] to handle
+  | loading and basic parsing of glTF files.
+  +code('example-code', 'Loading glTF files (example.ts)')
     | import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
     | import { Asset } from './asset';
-    | import { GltfRenderer } from './gltfrenderer';
-    | const gltfAsset = await loader.load(url); // url to any .gltf or .glb file
+    |
+    | const loader = new GltfLoader();
+    | const gltfAsset: GltfAsset = await loader.load(<url>); // url to any .gltf or .glb file
+    |
+    | const renderer = new GltfRenderer();
+    | const asset = new Asset(gAsset, renderer.context);
+    | const scene = await asset.getScene();
+    | renderer.scene = scene;
+  p
+    | The #[code Asset] is the root of a hierarchy mirroring #[code GltfAsset], which in turn mirrors the structure of the glTF
+    | format. See #[a(href="https://github.com/KhronosGroup/glTF#quickstart") here] for an overview.
+    | At the lowest level, #[code GltfAsset] contains raw binary buffer and image data, whereas our #[code Asset] class uploads the data
+    | to the GPU on creation and only keeps WebGL handles for issuing draw calls.
+  p
+    | A deeper look at the rendering logic:
+  +code('example-code', 'gltfrenderer.ts')
+    | protected onFrame(frameNumber: number): void {
+    |     const gl = this._context.gl;
+    |
+    |     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    |
+    |     this.pbrShader.bind();
+    |     gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
+    |     gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
+    |
+    |     if (this._scene) {
+    |         this._scene.draw(this._camera, this.pbrShader);
+    |     }
+    |
+    |     this.pbrShader.unbind();
+    | }
 
+  | Draw calls are batched by material and materials are sorted by transparency
+  | (opaque materials are rendered first; but no depth sorting occurs).
+  +code('example-code', 'scene.ts')
+    | draw(camera: Camera, shader: PbrShader) {
+    |     const gl = this.context.gl;
+    |     for (const material of this.sortedMaterials) {
+    |         const batches = this.batchesByMaterial.get(material)!;
+    |         material.bind(shader);
+    |         for (const {primitive, node} of batches) {
+    |             gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, node.finalTransform);
+    |             gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, node.normalMatrix);
+    |             primitive.draw(shader);
+    |         }
+    |         material.unbind(shader);
+    |     }
+    | }
