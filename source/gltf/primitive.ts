@@ -32,7 +32,7 @@ class VertexAttribute {
         private normalized: boolean,
         private stride: GLsizei,
         private offset: GLintptr,
-    ) {}
+    ) { }
 
     enable(index: GLuint) {
         this.buffer.attribEnable(
@@ -88,7 +88,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
         assert(gPrimitive.attributes.POSITION !== undefined, 'primitives must have the POSITION attribute');
         if (gltf.bufferViews === undefined) { throw new Error('invalid gltf'); }
 
-        const buffersByView: {[bufferView: number]: Buffer} = {};
+        const buffersByView: { [bufferView: number]: Buffer } = {};
         for (const semantic in gPrimitive.attributes) {
             const accessorIndex = gPrimitive.attributes[semantic];
             const accessor = gltf.accessors![accessorIndex];

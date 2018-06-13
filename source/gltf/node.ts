@@ -20,7 +20,7 @@ export class Node {
     // TODO: weights
     // TODO!: camera
     // camera: Camera;
-    name: string ;
+    name: string;
 
     finalTransform: mat4 = mat4.create();
     normalMatrix: mat3 = mat3.create();

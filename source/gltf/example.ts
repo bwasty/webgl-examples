@@ -12,15 +12,15 @@ const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Samp
 // const BASE_MODEL_URI = 'http://localhost:8080/';
 
 // tslint:disable:no-console
-type GltfVariant = 'glTF'|'glTF-Binary'|'glTF-Draco'|'glTF-Embedded'|'glTF-pbrSpecularGlossiness'|string;
+type GltfVariant = 'glTF' | 'glTF-Binary' | 'glTF-Draco' | 'glTF-Embedded' | 'glTF-pbrSpecularGlossiness' | string;
 interface GltfSample {
     name: string;
     screenshot: string;
-    variants: {[key in GltfVariant]: string };
+    variants: { [key in GltfVariant]: string };
 }
 
 function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms) );
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** baseUrl should end with a slash */
@@ -69,17 +69,17 @@ function setupDragAndDrop(loader: GltfLoader, renderer: GltfRenderer) {
     const input = document.getElementById('file-input');
     const dropzone = new SimpleDropzone(canvas, input);
 
-    dropzone.on('drop', async({files}: {files: Map<string, File>}) => {
+    dropzone.on('drop', async ({ files }: { files: Map<string, File> }) => {
         const asset = await loader.loadFromFiles(files);
         loadScene(asset, renderer);
     });
 
-    dropzone.on('droperror', ({message}: {message: string}) => {
+    dropzone.on('droperror', ({ message }: { message: string }) => {
         alert(`Error: ${message}`);
     });
 }
 
-class GuiOptions  {
+class GuiOptions {
     // tslint:disable-next-line:variable-name
     Sample = 'DamagedHelmet';
     // tslint:disable-next-line:variable-name
@@ -108,11 +108,11 @@ function updateDatDropdown(target: any, list: any) {
 }
 
 async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
-    const gui = new dat.GUI({autoPlace: false, width: 310});
+    const gui = new dat.GUI({ autoPlace: false, width: 310 });
     const options = new GuiOptions();
     options.Sample = getQueryParam('model') || 'DamagedHelmet';
 
-    const samples: GltfSample[] = await(await fetch(BASE_MODEL_URI + 'model-index.json')).json();
+    const samples: GltfSample[] = await (await fetch(BASE_MODEL_URI + 'model-index.json')).json();
     const sampleNames = samples.map((s) => s.name);
     const selectedSample = samples.find(((s) => s.name === options.Sample))!;
     const sampleCtrl = gui.add(options, 'Sample', sampleNames);
@@ -156,14 +156,14 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
     guiWrap.classList.add('dat-gui-wrap');
     guiWrap.appendChild(gui.domElement);
 
-    window.onpopstate = async(event) => {
+    window.onpopstate = async (event) => {
         const modelUrl = event.state;
         loadGltf(loader, modelUrl, renderer);
     };
 
     // for interactive 'integration testing' - load all samples and optionally
     // wait a bit in between
-    (window as any).cycleModels = async(delayMs?: number) => {
+    (window as any).cycleModels = async (delayMs?: number) => {
         for (const sample of samples) {
             console.log(sample.name);
             try {

@@ -1,6 +1,6 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    "editor.formatOnSave": false,
+    "editor.formatOnSave": true,
     "editor.detectIndentation": true,
     "[json]": {
         "editor.insertSpaces": true,
@@ -25,7 +25,7 @@
     },
     "files.exclude": {
         "**/.git": true, // this is a default value
-        "**/node_modules": true, // this excludes all folders
+        "**/node_modules": true, // this excludes all folders 
         "node_modules": true
     },
     "cSpell.language": "en",
