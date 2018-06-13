@@ -42,8 +42,7 @@ block breakdown
     | format. See #[a(href="https://github.com/KhronosGroup/glTF#quickstart") here] for an overview.
     | At the lowest level, #[code GltfAsset] contains raw binary buffer and image data, whereas our #[code Asset] class uploads the data
     | to the GPU on creation and only keeps WebGL handles for issuing draw calls.
-  p
-    | A deeper look at the rendering logic:
+  h3 A deeper look at the rendering logic
   +code('example-code', 'gltfrenderer.ts')
     | protected onFrame(frameNumber: number): void {
     |     const gl = this._context.gl;

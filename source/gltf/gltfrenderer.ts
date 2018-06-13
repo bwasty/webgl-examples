@@ -1,5 +1,5 @@
 import { vec3 } from 'gl-matrix';
-import * as Stats from 'stats.js'
+import * as Stats from 'stats.js';
 import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Renderer  } from 'webgl-operate';
 
 import { PbrShader } from './pbrshader';
