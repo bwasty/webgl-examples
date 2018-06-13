@@ -109,7 +109,7 @@ export class Material {
     }
 
     static async loadTexture(texInfo: GLTF.TextureInfo | GLTF.MaterialNormalTextureInfo,
-            asset: Asset, identifier: string): Promise<Texture2> {
+        asset: Asset, identifier: string): Promise<Texture2> {
         const gl = asset.context.gl;
         const gltf = asset.gAsset.gltf;
 

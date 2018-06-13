@@ -22,19 +22,19 @@ export function attribName(semantic: string): string {
 
 export enum ShaderFlags {
     // vertex shader + fragment shader
-    HAS_NORMALS           = 1,
-    HAS_TANGENTS          = 1 << 1,
-    HAS_UV                = 1 << 2,
-    HAS_COLORS            = 1 << 3,
+    HAS_NORMALS = 1,
+    HAS_TANGENTS = 1 << 1,
+    HAS_UV = 1 << 2,
+    HAS_COLORS = 1 << 3,
 
     // fragment shader only
-    USE_IBL               = 1 << 4,
-    HAS_BASECOLORMAP      = 1 << 5,
-    HAS_NORMALMAP         = 1 << 6,
-    HAS_EMISSIVEMAP       = 1 << 7,
+    USE_IBL = 1 << 4,
+    HAS_BASECOLORMAP = 1 << 5,
+    HAS_NORMALMAP = 1 << 6,
+    HAS_EMISSIVEMAP = 1 << 7,
     HAS_METALROUGHNESSMAP = 1 << 8,
-    HAS_OCCLUSIONMAP      = 1 << 9,
-    USE_TEX_LOD           = 1 << 10,
+    HAS_OCCLUSIONMAP = 1 << 9,
+    USE_TEX_LOD = 1 << 10,
 }
 
 // tslint:disable:variable-name
@@ -92,10 +92,10 @@ class PbrUniformLocations {
 
     constructor(program: Program) {
         for (const uniform in this) {
-           (this as any)[uniform] = program.uniform(uniform);
-           if (this[uniform] === null && !uniform.endsWith('Sampler')) {
-               console.warn('Failed to get uniform location for ' + uniform);
-           }
+            (this as any)[uniform] = program.uniform(uniform);
+            if (this[uniform] === null && !uniform.endsWith('Sampler')) {
+                console.warn('Failed to get uniform location for ' + uniform);
+            }
         }
 
         program.bind();
@@ -121,7 +121,7 @@ export class PbrShader {
     /**
      * WebGL Attrib locations. Equal to `ATTRIB_LOCATIONS` for WebGL2.
      */
-    attribLocations: {[attr: string]: number} = {};
+    attribLocations: { [attr: string]: number } = {};
 
     uniforms: PbrUniformLocations;
 

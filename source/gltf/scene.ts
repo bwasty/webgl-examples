@@ -60,7 +60,7 @@ export class Scene {
                 const mat = primitive.material;
                 const batches = scene.batchesByMaterial.get(mat) || [];
                 if (batches.length === 0) { scene.batchesByMaterial.set(mat, batches); }
-                batches.push({node, primitive});
+                batches.push({ node, primitive });
             }
         }
 
@@ -77,7 +77,7 @@ export class Scene {
         for (const material of this.sortedMaterials) {
             const batches = this.batchesByMaterial.get(material)!;
             material.bind(shader);
-            for (const {primitive, node} of batches) {
+            for (const { primitive, node } of batches) {
                 gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, node.finalTransform);
                 gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, node.normalMatrix);
                 primitive.draw(shader);

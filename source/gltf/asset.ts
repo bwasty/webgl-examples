@@ -26,11 +26,11 @@ export class Asset {
      * If there is no default scene, load the first one.
      */
     async getScene(index?: GlTfId) {
-       index = index !== undefined ? index : (this.gAsset.gltf.scene || 0);
-       if (this.scenes[index]) { return this.scenes[index]; }
-       const gScene = this.gAsset.gltf.scenes![index];
-       this.scenes[index] = await Scene.fromGltf(gScene, this);
-       return this.scenes[index];
+        index = index !== undefined ? index : (this.gAsset.gltf.scene || 0);
+        if (this.scenes[index]) { return this.scenes[index]; }
+        const gScene = this.gAsset.gltf.scenes![index];
+        this.scenes[index] = await Scene.fromGltf(gScene, this);
+        return this.scenes[index];
     }
 
     /** Get mesh - either from cache or parse from Gltf */
