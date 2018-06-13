@@ -99,7 +99,7 @@ function updateDatDropdown(target: any, list: any) {
     }
 
     if (list.constructor.name === 'Object') {
-        for (const key in list){
+        for (const key in list) {
             const str = '<option value=\'' + list[key] + '\'>' + key + '</option>';
             innerHTMLStr += str;
         }
