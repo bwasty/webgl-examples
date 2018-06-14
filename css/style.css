@@ -23,6 +23,11 @@ header, footer {
     padding-top: 8rem;
 }
 
+footer {
+    padding-bottom: 2rem;
+}
+
+
 section {
     padding-top: 2rem;
 }
@@ -61,7 +66,7 @@ nav .dropdown-item {
 nav .dropdown-item:hover {
     color: rgba(255, 255, 255, 0.75);
     background: none;
-}  
+}
 
 nav .dropdown-item:active {
     color: rgba(255, 255, 255, 1.00);
@@ -78,14 +83,14 @@ ul.features li {
     display: inline;
     float: left;
 }
-ul.features li:after { 
-    content: "\2009\2014\2009"; 
+ul.features li:after {
+    content: "\2009\2014\2009";
 }
-ul.features li:first-child:after { 
-    content: "\2002\007C\2002"; 
+ul.features li:first-child:after {
+    content: "\2002\007C\2002";
 }
-ul.features li:last-child:after { 
-    content: none; 
+ul.features li:last-child:after {
+    content: none;
 }
 
 @media screen and (min-width: 992px) {
@@ -160,4 +165,21 @@ canvas:-webkit-full-screen {
     top: 0;
     margin: 0;
     padding: 0;
+}
+
+.dat-gui-wrap {
+    top: 1px;
+    right: 0px;
+    position: absolute;
+    margin-top: 6rem;
+    padding-top: 1px;
+    padding-right: 1px;
+}
+
+.dat-gui-wrap canvas {
+    margin-top: initial;
+}
+
+.dg li.dat-gui-stats:not(.folder) {
+    height: 48px;
 }
