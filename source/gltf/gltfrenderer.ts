@@ -126,7 +126,7 @@ export class GltfRenderer extends Renderer {
         this.stats.end();
     }
     protected onSwap(): void {
-        this.invalidate(); // TODO!: why?
+        this.invalidate();
     }
 
     protected setCameraFromBounds() {
