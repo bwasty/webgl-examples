@@ -12,7 +12,7 @@ const BASE_MODEL_URI = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Samp
 // const BASE_MODEL_URI = 'http://localhost:8080/';
 
 // tslint:disable:no-console
-type GltfVariant = 'glTF' | 'glTF-Binary' | 'glTF-Draco' | 'glTF-Embedded' | 'glTF-pbrSpecularGlossiness' | string;
+type GltfVariant = 'glTF' | 'glTF-Binary' | 'glTF-Draco' | 'glTF-Embedded' | 'glTF-pbrSpecularGlossiness';
 interface GltfSample {
     name: string;
     screenshot: string;
@@ -25,7 +25,7 @@ function delay(ms: number) {
 
 /** baseUrl should end with a slash */
 function getSampleUrl(sample: GltfSample, baseUrl = '/', variant = 'glTF') {
-    return `${baseUrl}${sample.name}/${variant}/${sample.variants[variant]}`;
+    return `${baseUrl}${sample.name}/${variant}/${sample.variants[variant as GltfVariant]}`;
 }
 
 async function loadScene(gAsset: GltfAsset, renderer: GltfRenderer) {
@@ -111,6 +111,7 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
     const gui = new dat.GUI({ autoPlace: false, width: 310 });
     const options = new GuiOptions();
     options.Sample = getQueryParam('model') || 'DamagedHelmet';
+    options.Variant = getQueryParam('variant') as GltfVariant || 'glTF';
 
     const samples: GltfSample[] = await (await fetch(BASE_MODEL_URI + 'model-index.json')).json();
     const sampleNames = samples.map((s) => s.name);

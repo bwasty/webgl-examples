@@ -7,10 +7,10 @@ block canvas
   input(id='file-input' type='file' multiple)
   p
   p
-    | glTF 2.0 Example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader].
+    | glTF 2.0 example with simple PBR shading based on the #[a(href='https://github.com/KhronosGroup/glTF-WebGL-PBR') reference shader].
   p
     | Select a #[a(href='https://github.com/KhronosGroup/glTF-Sample-Models/blob/master/2.0/README.md') sample model]
-    | from the dropdown, use the file input or drag file(s), folders or zip files onto the canvas.
+    | from the dropdown, use the file input or drag files, folders or zip files onto the canvas.
 
 block breakdown
   p
@@ -22,6 +22,7 @@ block breakdown
     | import { Canvas } from 'webgl-operate';
     | import { GltfRenderer } from './gltfrenderer';
     | const canvas = new Canvas('example-canvas');
+    | const renderer = new GltfRenderer();
     | canvas.renderer = renderer;
 
   | We're using #[a(href="https://www.npmjs.com/package/gltf-loader-ts") gltf-loader-ts] to handle
@@ -31,9 +32,8 @@ block breakdown
     | import { Asset } from './asset';
     |
     | const loader = new GltfLoader();
-    | const gltfAsset: GltfAsset = await loader.load(<url>); // url to any .gltf or .glb file
+    | const gltfAsset: GltfAsset = await loader.load(url); // url to any .gltf or .glb file
     |
-    | const renderer = new GltfRenderer();
     | const asset = new Asset(gAsset, renderer.context);
     | const scene = await asset.getScene();
     | renderer.scene = scene;
