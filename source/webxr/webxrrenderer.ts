@@ -112,6 +112,10 @@ export class WebXRRenderer extends Renderer {
         this.stats.begin();
         const gl = this._context.gl;
 
+        // TODO!!: tmp
+        let time = Date.now();
+        gl.clearColor(Math.cos(time / 2000), Math.cos(time / 4000), Math.cos(time / 6000), 1.0);
+
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         this.pbrShader.bind();

@@ -45,12 +45,8 @@ function getQueryParam(param: string): string | undefined {
 
 
 async function onload() {
-    // TODO!!: HACK - see https://github.com/cginternals/webgl-operate/issues/68
-    // (gloperate.Context as any).CONTEXT_ATTRIBUTES.depth = true;
+    // TODO!: magic window...
     // const canvas = new gloperate.Canvas('example-canvas');
-    // const context = canvas.context;
-    // const renderer = new WebXRRenderer();
-    // canvas.renderer = renderer;
 
     const messageEl = document.getElementById('message')!;
     function message(msg: string, color: 'red' | 'black' | 'green' = 'red') {
@@ -89,6 +85,10 @@ async function onload() {
             message('Session active.', 'green');
             xrButton.innerHTML = 'Exit XR';
 
+            xrc.gl.clearColor(0, 1, 0, 1);
+            const renderer = new WebXRRenderer();
+            xrc.canvas!.renderer = renderer;
+
             xrc.session.addEventListener('end', () => {
                 message('Ready.', 'green');
                 xrButton.innerHTML = 'Enter XR';
@@ -105,10 +105,8 @@ async function onload() {
     // canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     // canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
 
-    // // export variables
-    // (window as any)['canvas'] = canvas;
-    // (window as any)['context'] = context;
-    // (window as any)['renderer'] = renderer;
+    // export variables
+    (window as any)['xrcontroller'] = xrc;
 }
 
 if (window.document.readyState === 'complete') {
