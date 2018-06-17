@@ -39,7 +39,7 @@
         "simple-dropzone": "~0.5.3",
         "stats.js": "~0.17.0",
         "typescript": "~2.8.1",
-        "webgl-operate": "~0.3.5",
+        "webgl-operate": "file:../webgl-operate",
         "webpack": "~4.9.1",
         "webpack-bundle-analyzer": "~2.13.1",
         "webpack-cli": "~2.1.4",
