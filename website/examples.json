@@ -43,5 +43,13 @@
             "bwasty"
         ],
         "caption": "glTF 2.0 example with PBR shading"
+    },
+    {
+        "target": "webxr",
+        "title": "WebXR",
+        "authors": [
+            "bwasty"
+        ],
+        "caption": "WebXR example"
     }
 ]

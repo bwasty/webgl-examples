@@ -15,6 +15,7 @@ module.exports = (env, options) => {
             'sky-triangle': ['require.ts', 'sky-triangle/example.ts'],
             'cubescape': ['require.ts', 'cubescape/example.ts'],
             'gltf': ['require.ts', 'gltf/example.ts'],
+            'webxr': ['require.ts', 'webxr/example.ts'],
             // 'openll-showcase': ['require.ts', 'openll-showcase/example.ts'],
         },
         externals: {
