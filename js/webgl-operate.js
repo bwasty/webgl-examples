@@ -11469,7 +11469,7 @@ var resizable_1 = __webpack_require__(/*! ./resizable */ "./resizable.ts");
 var wizard_1 = __webpack_require__(/*! ./wizard */ "./wizard.ts");
 var Canvas = (function (_super) {
     __extends(Canvas, _super);
-    function Canvas(element, contextAttributes) {
+    function Canvas(element, contextAttributes, controller) {
         var _this = _super.call(this) || this;
         _this._framePrecisionSubject = new ReplaySubject_1.ReplaySubject(1);
         _this._size = [1, 1];
@@ -11481,7 +11481,12 @@ var Canvas = (function (_super) {
         _this._mouseEventProvider = new mouseeventprovider_1.MouseEventProvider(_this._element, 200);
         var dataset = _this._element.dataset;
         _this._context = context_1.Context.request(_this._element, contextAttributes);
-        _this.configureController(dataset);
+        if (controller) {
+            _this._controller = controller;
+        }
+        else {
+            _this.configureController(dataset);
+        }
         _this.configureSizeAndScale(dataset);
         var dataClearColor;
         if (dataset.clearColor) {
@@ -19486,37 +19491,39 @@ var XRController = (function () {
     }
     XRController.prototype.initialize = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, e_1, e_2;
+            var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         auxiliaries_1.assert(supportsXR(), 'WebXR not supported by browser');
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
                         _a = this;
                         return [4, navigator.xr.requestDevice()];
-                    case 2:
+                    case 1:
                         _a.device = _b.sent();
                         this.contextAttributes.compatibleXRDevice = this.device;
-                        return [3, 4];
-                    case 3:
-                        e_1 = _b.sent();
-                        auxiliaries_1.log(auxiliaries_1.LogLevel.ModuleDev, "Failed to request XR device: " + e_1);
-                        return [2, false];
-                    case 4:
-                        _b.trys.push([4, 6, , 7]);
+                        return [2];
+                }
+            });
+        });
+    };
+    XRController.prototype.supportsSession = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var e_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        auxiliaries_1.assert(this.device !== undefined, 'this.device not initialized');
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
                         return [4, this.device.supportsSession(this.sessionCreationOptions)];
-                    case 5:
-                        if (_b.sent()) {
-                            return [2, true];
-                        }
-                        return [3, 7];
-                    case 6:
-                        e_2 = _b.sent();
-                        auxiliaries_1.log(auxiliaries_1.LogLevel.ModuleDev, "XR session with options " + this.sessionCreationOptions + " not supported");
+                    case 2:
+                        _a.sent();
+                        return [2, true];
+                    case 3:
+                        e_1 = _a.sent();
                         return [2, false];
-                    case 7: return [2, false];
+                    case 4: return [2];
                 }
             });
         });
@@ -19553,7 +19560,6 @@ var XRController = (function () {
         var pose = frame.getDevicePose(this.frameOfRef);
         if (pose) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, this.session.baseLayer.framebuffer);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var renderViews = [];
             for (var _i = 0, _a = frame.views; _i < _a.length; _i++) {
                 var view = _a[_i];
@@ -19563,6 +19569,27 @@ var XRController = (function () {
         }
         else {
         }
+    };
+    XRController.prototype.block = function () {
+    };
+    Object.defineProperty(XRController.prototype, "blocked", {
+        get: function () {
+            return false;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    XRController.prototype.unblock = function () {
+    };
+    Object.defineProperty(XRController.prototype, "controllable", {
+        set: function (c) {
+            this.renderer = c;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    XRController.prototype.update = function (force) {
+        if (force === void 0) { force = false; }
     };
     return XRController;
 }());
