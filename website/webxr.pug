@@ -2,9 +2,10 @@ extends example.pug
 
 
 block canvas
+  script(src='js/webxr-version-shim.js')
   div(id='canvas-container' style='position: relative')
     canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
   button(id='xr-button' disabled) Enter XR
-  span(id='message' style='margin-left: 10px; color: red; font-size: smaller') Initializing....
+  span(id='message' style='margin-left: 10px; color: black; font-size: smaller') Initializing....
   p WebXR example
 

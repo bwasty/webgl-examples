@@ -1,9 +1,9 @@
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
+import { supportsXR } from 'webgl-operate';
 import { Asset } from '../gltf/asset';
 import { WebXRRenderer } from './webxrrenderer';
-import { supportsXR } from 'webgl-operate';
 
 // tslint:disable:no-console
 
@@ -53,26 +53,37 @@ async function onload() {
     // canvas.renderer = renderer;
 
     const messageEl = document.getElementById('message')!;
-    const errorMessage = (msg: string) => messageEl.innerHTML = msg;
+    function message(msg: string, color: 'red' | 'black' | 'green' = 'red') {
+        messageEl.innerHTML = msg;
+        messageEl.style.color = color;
+    }
     const xrButton = document.getElementById('xr-button') as HTMLButtonElement;
 
     if (!supportsXR()) {
-        errorMessage('Your browser does not support WebXR.');
+        message('Your browser does not support WebXR.');
         return;
     }
 
     const xrc = new gloperate.XRController({ immersive: true });
-    // TODO!!: need to distinguish device / session support cases...
-    if (!await xrc.initialize()) {
-        errorMessage('Failed to initialize WebXR - do you have a device connected?');
+    try {
+        await xrc.initialize();
+    } catch (e) {
+        console.error(e);
+        message(e.message);
         return;
     }
-    errorMessage('');
+    if (!await xrc.supportsSession()) {
+        message('immersive session not supported.')
+    }
+    message('Ready.', 'green');
     xrButton.disabled = false;
 
-    xrButton.click = () => {
-        errorMessage('Requesting sessions...');
-        xrc.requestSession();
+    xrButton.onclick = async () => {
+        message('Requesting session...', 'black');
+        await xrc.requestSession();
+        message('Session active.', 'green');
+        // TODO!: make it an exit button
+        xrButton.disabled = true;
     };
 
     // TODO!!!: need to get canvas from xrc to set renderer?
