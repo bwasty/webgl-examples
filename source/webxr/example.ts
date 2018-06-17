@@ -79,11 +79,21 @@ async function onload() {
     xrButton.disabled = false;
 
     xrButton.onclick = async () => {
-        message('Requesting session...', 'black');
-        await xrc.requestSession();
-        message('Session active.', 'green');
-        // TODO!: make it an exit button
-        xrButton.disabled = true;
+        if (xrc.session) {
+            await xrc.endSession();
+            message('Ready.', 'green');
+            xrButton.innerHTML = 'Enter XR';
+        } else {
+            message('Requesting session...', 'black');
+            await xrc.requestSession();
+            message('Session active.', 'green');
+            xrButton.innerHTML = 'Exit XR';
+
+            xrc.session.addEventListener('end', () => {
+                message('Ready.', 'green');
+                xrButton.innerHTML = 'Enter XR';
+            });
+        }
     };
 
     // TODO!!!: need to get canvas from xrc to set renderer?
