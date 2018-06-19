@@ -1,7 +1,7 @@
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
-import { supportsXR, XRController } from 'webgl-operate';
+import { supportsXR, XRController, Canvas } from 'webgl-operate';
 import { Asset } from '../gltf/asset';
 import { WebXRRenderer } from './webxrrenderer';
 
@@ -46,9 +46,9 @@ function getQueryParam(param: string): string | undefined {
 }
 
 let renderer: WebXRRenderer;
-function initializeRenderer(xrc: XRController) {
+function initializeRenderer(canvas: Canvas) {
     renderer = new WebXRRenderer();
-    xrc.canvas!.renderer = renderer;
+    canvas.renderer = renderer;
 
     if (gltfAsset) {
         // Asset has been loaded before - just need to re-create gl resources
@@ -61,6 +61,10 @@ function initializeRenderer(xrc: XRController) {
     }
 }
 
+function initFallback() {
+    const canvas = new gloperate.Canvas('example-canvas', { depth: true });
+    initializeRenderer(canvas);
+}
 
 async function onload() {
     // TODO!: magic window...
@@ -75,6 +79,7 @@ async function onload() {
 
     if (!supportsXR()) {
         message('Your browser does not support WebXR.');
+        initFallback();
         return;
     }
 
@@ -118,13 +123,14 @@ async function onload() {
     } catch (e) {
         console.error(e);
         message(e.message);
+        initFallback();
         return;
     }
 
     if (mode === 'magic-window') {
         // start non-immersive session and prepare for entering immersive session via button later
         await xrc.requestSession();
-        initializeRenderer(xrc);
+        initializeRenderer(xrc.canvas!);
 
         xrc.sessionCreationOptions.immersive = true;
     }
@@ -146,7 +152,7 @@ async function onload() {
             message('Session active.', 'green');
             xrButton.innerHTML = 'Exit XR';
 
-            initializeRenderer(xrc);
+            initializeRenderer(xrc.canvas!);
 
             xrc.session.addEventListener('end', () => {
                 message('Ready.', 'green');
