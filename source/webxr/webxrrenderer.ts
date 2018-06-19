@@ -1,4 +1,4 @@
-import { vec3, mat4 } from 'gl-matrix';
+import { mat4, vec3 } from 'gl-matrix';
 import * as Stats from 'stats.js';
 import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Renderer, RenderView } from 'webgl-operate';
 
@@ -57,10 +57,7 @@ export class WebXRRenderer extends Renderer {
         this._navigation.camera = this._camera;
 
         gl.enable(gl.DEPTH_TEST);
-
-        setTimeout(() => {
-            this.clearColor = [0.1, 0.2, 0.3, 1.0];
-        }, 0);
+        gl.clearColor(0, 0, 0, 1);
 
         this.stats = new Stats();
         (this.stats.dom as any).height = '48px';
@@ -77,6 +74,7 @@ export class WebXRRenderer extends Renderer {
         this.pbrShader.uninitialize();
     }
 
+    // TODO!!: this is not called...
     protected onUpdate(): boolean {
         const gl = this.context.gl;
         // Resize
@@ -86,12 +84,6 @@ export class WebXRRenderer extends Renderer {
         }
         if (this._altered.canvasSize) {
             this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
-        }
-
-        // Update clear color
-        if (this._altered.clearColor) {
-            const c = this._clearColor;
-            gl.clearColor(c[0], c[1], c[2], c[3]);
         }
 
         this._navigation.update();
@@ -117,6 +109,7 @@ export class WebXRRenderer extends Renderer {
 
         this.pbrShader.bind();
         // TODO!: no vr case? use camera & navigation?
+        // TODO!!: if more than 1 view, push viewproj setting down to primitive level
         for (const [i, view] of renderViews.entries()) {
             const vp = view.viewport;
             gl.viewport(vp.x, vp.y, vp.width, vp.height);

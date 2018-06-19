@@ -1,7 +1,7 @@
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
-import { supportsXR } from 'webgl-operate';
+import { supportsXR, XRController } from 'webgl-operate';
 import { Asset } from '../gltf/asset';
 import { WebXRRenderer } from './webxrrenderer';
 
@@ -15,15 +15,17 @@ async function loadScene(gAsset: GltfAsset, renderer: WebXRRenderer) {
     renderer.scene = scene;
 }
 
+let gltfAsset: GltfAsset;
+
 async function loadGltf(loader: GltfLoader, uri: string, renderer: WebXRRenderer) {
     try {
         console.time('GltfLoader.load');
-        const gAsset = await loader.load(uri);
+        gltfAsset = await loader.load(uri);
         console.timeEnd('GltfLoader.load');
         console.time('asset.preFetchAll');
-        await gAsset.preFetchAll();
+        await gltfAsset.preFetchAll();
         console.timeEnd('asset.preFetchAll');
-        loadScene(gAsset, renderer);
+        loadScene(gltfAsset, renderer);
     } catch (e) {
         console.error(e);
         if (typeof e === 'string') {
@@ -40,6 +42,22 @@ function getQueryParam(param: string): string | undefined {
     const match = document.location.search.match(re);
     if (match) {
         return match[1];
+    }
+}
+
+let renderer: WebXRRenderer;
+function initializeRenderer(xrc: XRController) {
+    renderer = new WebXRRenderer();
+    xrc.canvas!.renderer = renderer;
+
+    if (gltfAsset) {
+        // Asset has been loaded before - just need to re-create gl resources
+        loadScene(gltfAsset, renderer);
+    } else {
+        const loader = new GltfLoader();
+        // tslint:disable-next-line:max-line-length
+        const uri = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/master/media/gltf/space/space.gltf';
+        loadGltf(loader, uri, renderer);
     }
 }
 
@@ -60,7 +78,41 @@ async function onload() {
         return;
     }
 
-    const xrc = new gloperate.XRController({ immersive: true });
+    type Mode = 'present' | 'mirror' | 'magic-window';
+    const mode = getQueryParam('mode') || 'present';
+
+    let xrc: XRController;
+    if (mode === 'present') {
+        // This resembles the '1 - XR Presentation' example
+        // https://immersive-web.github.io/webxr-samples/xr-presentation.html
+
+        xrc = new gloperate.XRController({ immersive: true });
+    } else if (mode === 'mirror') {
+        // 2 - Mirroring
+        // https://immersive-web.github.io/webxr-samples/mirroring.html
+
+        // TODO!!: make XRPresentationContext type available here...
+        const mirrorCanvas = document.getElementById('example-canvas') as HTMLCanvasElement;
+        const context = mirrorCanvas.getContext('xrpresent');
+        xrc = new gloperate.XRController({
+            immersive: true,
+            outputContext: context,
+        });
+    } else if (mode === 'magic-window') {
+        // 3 - Magic Window
+        // https://immersive-web.github.io/webxr-samples/magic-window.html
+
+        const magicWindowCanvas = document.getElementById('example-canvas') as HTMLCanvasElement;
+        const context = magicWindowCanvas.getContext('xrpresent');
+        xrc = new gloperate.XRController({
+            immersive: false,
+            outputContext: context,
+        });
+
+    } else {
+        throw new Error('invalid mode');
+    }
+
     try {
         await xrc.initialize();
     } catch (e) {
@@ -68,14 +120,23 @@ async function onload() {
         message(e.message);
         return;
     }
+
+    if (mode === 'magic-window') {
+        // start non-immersive session and prepare for entering immersive session via button later
+        await xrc.requestSession();
+        initializeRenderer(xrc);
+
+        xrc.sessionCreationOptions.immersive = true;
+    }
+
     if (!await xrc.supportsSession()) {
-        message('immersive session not supported.')
+        message('immersive session not supported.');
     }
     message('Ready.', 'green');
     xrButton.disabled = false;
 
     xrButton.onclick = async () => {
-        if (xrc.session) {
+        if (xrc.session && xrc.session.immersive) {
             await xrc.endSession();
             message('Ready.', 'green');
             xrButton.innerHTML = 'Enter XR';
@@ -85,13 +146,7 @@ async function onload() {
             message('Session active.', 'green');
             xrButton.innerHTML = 'Exit XR';
 
-            const renderer = new WebXRRenderer();
-            xrc.canvas!.renderer = renderer;
-
-            const loader = new GltfLoader();
-            // tslint:disable-next-line:max-line-length
-            const uri = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/master/media/gltf/space/space.gltf';
-            loadGltf(loader, uri, renderer);
+            initializeRenderer(xrc);
 
             xrc.session.addEventListener('end', () => {
                 message('Ready.', 'green');
@@ -99,8 +154,6 @@ async function onload() {
             });
         }
     };
-
-
 
     // canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     // canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
