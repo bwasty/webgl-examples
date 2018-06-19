@@ -85,9 +85,13 @@ async function onload() {
             message('Session active.', 'green');
             xrButton.innerHTML = 'Exit XR';
 
-            xrc.gl.clearColor(0, 1, 0, 1);
             const renderer = new WebXRRenderer();
             xrc.canvas!.renderer = renderer;
+
+            const loader = new GltfLoader();
+            // tslint:disable-next-line:max-line-length
+            const uri = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/master/media/gltf/space/space.gltf';
+            loadGltf(loader, uri, renderer);
 
             xrc.session.addEventListener('end', () => {
                 message('Ready.', 'green');
@@ -96,11 +100,7 @@ async function onload() {
         }
     };
 
-    // TODO!!!: need to get canvas from xrc to set renderer?
-    const loader = new GltfLoader();
 
-    // const uri = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/master/media/gltf/space/space.gltf';
-    // loadGltf(loader, uri, renderer);
 
     // canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     // canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));

@@ -72,7 +72,7 @@ export class Scene {
         return scene;
     }
 
-    draw(camera: Camera, shader: PbrShader) {
+    draw(shader: PbrShader) {
         const gl = this.context.gl;
         for (const material of this.sortedMaterials) {
             const batches = this.batchesByMaterial.get(material)!;

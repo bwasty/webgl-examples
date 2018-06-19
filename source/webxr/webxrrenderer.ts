@@ -1,6 +1,6 @@
-import { vec3 } from 'gl-matrix';
+import { vec3, mat4 } from 'gl-matrix';
 import * as Stats from 'stats.js';
-import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Renderer } from 'webgl-operate';
+import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Renderer, RenderView } from 'webgl-operate';
 
 import { PbrShader } from '../gltf/pbrshader';
 import { Scene } from '../gltf/scene';
@@ -26,6 +26,8 @@ export class WebXRRenderer extends Renderer {
         // TODO!!: hack? (_sceneChanged doesn't work...)
         this.invalidate();
     }
+
+    protected viewProjection = mat4.create(); // to avoid allocation per frame
 
     get context() {
         return this._context;
@@ -108,24 +110,25 @@ export class WebXRRenderer extends Renderer {
 
     protected onPrepare(): void { }
 
-    protected onFrame(frameNumber: number): void {
+    protected onFrame(frameNumber: number, renderViews: RenderView[]): void {
         this.stats.begin();
         const gl = this._context.gl;
-
-        // TODO!!: tmp
-        let time = Date.now();
-        gl.clearColor(Math.cos(time / 2000), Math.cos(time / 4000), Math.cos(time / 6000), 1.0);
-
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         this.pbrShader.bind();
-        gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
-        gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
+        // TODO!: no vr case? use camera & navigation?
+        for (const [i, view] of renderViews.entries()) {
+            const vp = view.viewport;
+            gl.viewport(vp.x, vp.y, vp.width, vp.height);
 
-        if (this._scene) {
-            this._scene.draw(this._camera, this.pbrShader);
+            mat4.multiply(this.viewProjection, view.projectionMatrix as mat4, view.viewMatrix as mat4);
+            gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this.viewProjection);
+            gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
+
+            if (this._scene) {
+                this._scene.draw(this.pbrShader);
+            }
         }
-
         this.pbrShader.unbind();
         this.stats.end();
     }

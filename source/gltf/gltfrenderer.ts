@@ -115,7 +115,7 @@ export class GltfRenderer extends Renderer {
         gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
 
         if (this._scene) {
-            this._scene.draw(this._camera, this.pbrShader);
+            this._scene.draw(this.pbrShader);
         }
 
         this.pbrShader.unbind();
