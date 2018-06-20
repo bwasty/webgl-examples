@@ -102,13 +102,31 @@ export class WebXRRenderer extends Renderer {
 
     protected onPrepare(): void { }
 
-    protected onFrame(frameNumber: number, renderViews: RenderView[]): void {
+    protected onFrame(frameNumber: number, renderViews?: RenderView[]): void {
         this.stats.begin();
         const gl = this._context.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         this.pbrShader.bind();
-        // TODO!!!: no vr case? use camera & navigation?
+
+        if (renderViews) {
+            this.drawRenderViews(renderViews);
+        } else {
+            // fallback - plain WebGL + mouse-based navigation
+            gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
+            gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
+
+            if (this._scene) {
+                this._scene.draw(this.pbrShader);
+            }
+        }
+
+        this.pbrShader.unbind();
+        this.stats.end();
+    }
+
+    protected drawRenderViews(renderViews: RenderView[]) {
+        const gl = this._context.gl;
         // TODO!!: if more than 1 view, push viewproj setting down to primitive level
         for (const [i, view] of renderViews.entries()) {
             const vp = view.viewport;
@@ -122,9 +140,8 @@ export class WebXRRenderer extends Renderer {
                 this._scene.draw(this.pbrShader);
             }
         }
-        this.pbrShader.unbind();
-        this.stats.end();
     }
+
     protected onSwap(): void {
         this.invalidate();
     }
