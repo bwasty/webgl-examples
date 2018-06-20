@@ -127,17 +127,20 @@ export class WebXRRenderer extends Renderer {
 
     protected drawRenderViews(renderViews: RenderView[]) {
         const gl = this._context.gl;
-        // TODO!!: if more than 1 view, push viewproj setting down to primitive level
-        for (const [i, view] of renderViews.entries()) {
-            const vp = view.viewport;
-            gl.viewport(vp.x, vp.y, vp.width, vp.height);
+        if (this._scene) {
+            if (renderViews.length === 1) {
+                // Optimization for the single-view case: bind once instead of for each primitive
+                // WebXR with a single view can happen for 'magic windows' and 'see-through' phone AR.
+                const view = renderViews[0];
+                const vp = view.viewport;
+                gl.viewport(vp.x, vp.y, vp.width, vp.height);
 
-            mat4.multiply(this.viewProjection, view.projectionMatrix as mat4, view.viewMatrix as mat4);
-            gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this.viewProjection);
-            gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
+                gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, view.viewProjectionMatrix);
+                gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
 
-            if (this._scene) {
-                this._scene.draw(this.pbrShader);
+                this._scene.draw(this.pbrShader); // don't pass render views
+            } else {
+                this._scene.draw(this.pbrShader, renderViews);
             }
         }
     }
