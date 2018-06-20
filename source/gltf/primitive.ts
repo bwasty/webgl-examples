@@ -1,4 +1,4 @@
-import { auxiliaries, Buffer, Context, Initializable, VertexArray } from 'webgl-operate';
+import { auxiliaries, Buffer, Context, Initializable, RenderView, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { vec3 } from 'gl-matrix';
@@ -215,11 +215,26 @@ export class Primitive extends Initializable {
         }
     }
 
-    draw(shader: PbrShader): void {
+    draw(shader: PbrShader, renderViews?: RenderView[]): void {
         this.shader = shader;
         this.context.gl.uniform1i(shader.uniforms.u_PbrFlags, this.shaderFlags);
         this.vertexArray.bind();
-        this.drawCall();
+
+        if (renderViews) {
+            const gl = this.context.gl;
+            // To avoid the overall bind count amount, only set viewport and view/projection-related
+            // uniforms and render for each view (= eye in a standard VR setup)
+            for (const view of renderViews) {
+                const vp = view.viewport;
+                gl.viewport(vp.x, vp.y, vp.width, vp.height);
+
+                gl.uniformMatrix4fv(shader.uniforms.u_ViewProjection, false, view.viewProjectionMatrix);
+                gl.uniform3fv(shader.uniforms.u_Camera, view.cameraPosition);
+                this.drawCall();
+            }
+        } else {
+            this.drawCall();
+        }
         this.vertexArray.unbind();
         this.shader = undefined;
     }

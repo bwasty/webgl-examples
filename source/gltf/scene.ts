@@ -1,6 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { gltf as GLTF } from 'gltf-loader-ts';
-import { Camera, Context } from 'webgl-operate';
+import { Camera, Context, RenderView } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
@@ -72,7 +72,7 @@ export class Scene {
         return scene;
     }
 
-    draw(shader: PbrShader) {
+    draw(shader: PbrShader, renderViews?: RenderView[]) {
         const gl = this.context.gl;
         for (const material of this.sortedMaterials) {
             const batches = this.batchesByMaterial.get(material)!;
@@ -80,7 +80,7 @@ export class Scene {
             for (const { primitive, node } of batches) {
                 gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, node.finalTransform);
                 gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, node.normalMatrix);
-                primitive.draw(shader);
+                primitive.draw(shader, renderViews);
             }
             material.unbind(shader);
         }
