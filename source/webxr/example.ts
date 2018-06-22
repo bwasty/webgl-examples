@@ -1,7 +1,8 @@
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
-import { supportsXR, XRController, Canvas } from 'webgl-operate';
+import { Canvas, supportsXR, XRController } from 'webgl-operate';
+import { XRPresentationContext } from 'webgl-operate/lib/webxr';
 import { Asset } from '../gltf/asset';
 import { WebXRRenderer } from './webxrrenderer';
 
@@ -67,9 +68,6 @@ function initFallback() {
 }
 
 async function onload() {
-    // TODO!: magic window...
-    // const canvas = new gloperate.Canvas('example-canvas');
-
     const messageEl = document.getElementById('message')!;
     function message(msg: string, color: 'red' | 'black' | 'green' = 'red') {
         messageEl.innerHTML = msg;
@@ -84,7 +82,7 @@ async function onload() {
     }
 
     type Mode = 'present' | 'mirror' | 'magic-window';
-    const mode = getQueryParam('mode') || 'present';
+    const mode = getQueryParam('mode') || 'magic-window';
 
     let xrc: XRController;
     if (mode === 'present') {
@@ -98,7 +96,7 @@ async function onload() {
 
         // TODO!!: make XRPresentationContext type available here...
         const mirrorCanvas = document.getElementById('example-canvas') as HTMLCanvasElement;
-        const context = mirrorCanvas.getContext('xrpresent');
+        const context = mirrorCanvas.getContext('xrpresent') as XRPresentationContext;
         xrc = new gloperate.XRController({
             immersive: true,
             outputContext: context,
@@ -108,7 +106,7 @@ async function onload() {
         // https://immersive-web.github.io/webxr-samples/magic-window.html
 
         const magicWindowCanvas = document.getElementById('example-canvas') as HTMLCanvasElement;
-        const context = magicWindowCanvas.getContext('xrpresent');
+        const context = magicWindowCanvas.getContext('xrpresent') as XRPresentationContext;
         xrc = new gloperate.XRController({
             immersive: false,
             outputContext: context,
@@ -154,7 +152,7 @@ async function onload() {
 
             initializeRenderer(xrc.canvas!);
 
-            xrc.session.addEventListener('end', () => {
+            xrc.session!.addEventListener('end', () => {
                 message('Ready.', 'green');
                 xrButton.innerHTML = 'Enter XR';
             });
