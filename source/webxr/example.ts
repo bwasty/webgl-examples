@@ -75,6 +75,19 @@ async function onload() {
     }
     const xrButton = document.getElementById('xr-button') as HTMLButtonElement;
 
+    let xrc: XRController;
+    async function initializeController(): Promise<boolean> {
+        try {
+            await xrc.initialize();
+            return true;
+        } catch (e) {
+            console.error(e);
+            message(e.message);
+            initFallback();
+            return false;
+        }
+    }
+
     if (!supportsXR()) {
         message('Your browser does not support WebXR.');
         initFallback();
@@ -84,53 +97,45 @@ async function onload() {
     type Mode = 'present' | 'mirror' | 'magic-window';
     const mode = getQueryParam('mode') || 'magic-window';
 
-    let xrc: XRController;
     if (mode === 'present') {
         // This resembles the '1 - XR Presentation' example
         // https://immersive-web.github.io/webxr-samples/xr-presentation.html
 
         xrc = new gloperate.XRController({ immersive: true });
+        if (!await initializeController()) {
+            return;
+        }
     } else if (mode === 'mirror') {
         // 2 - Mirroring
         // https://immersive-web.github.io/webxr-samples/mirroring.html
 
-        // TODO!!: make XRPresentationContext type available here...
+        xrc = new gloperate.XRController({ immersive: true });
+        if (!await initializeController()) {
+            return;
+        }
+
         const mirrorCanvas = document.getElementById('example-canvas') as HTMLCanvasElement;
         const context = mirrorCanvas.getContext('xrpresent') as XRPresentationContext;
-        xrc = new gloperate.XRController({
-            immersive: true,
-            outputContext: context,
-        });
+        xrc.sessionCreationOptions.outputContext = context;
     } else if (mode === 'magic-window') {
         // 3 - Magic Window
         // https://immersive-web.github.io/webxr-samples/magic-window.html
 
+        xrc = new gloperate.XRController({ immersive: false });
+        if (!await initializeController()) {
+            return;
+        }
+
         const magicWindowCanvas = document.getElementById('example-canvas') as HTMLCanvasElement;
         const context = magicWindowCanvas.getContext('xrpresent') as XRPresentationContext;
-        xrc = new gloperate.XRController({
-            immersive: false,
-            outputContext: context,
-        });
+        xrc.sessionCreationOptions.outputContext = context;
 
-    } else {
-        throw new Error('invalid mode');
-    }
-
-    try {
-        await xrc.initialize();
-    } catch (e) {
-        console.error(e);
-        message(e.message);
-        initFallback();
-        return;
-    }
-
-    if (mode === 'magic-window') {
         // start non-immersive session and prepare for entering immersive session via button later
         await xrc.requestSession();
         initializeRenderer(xrc.canvas!);
-
         xrc.sessionCreationOptions.immersive = true;
+    } else {
+        throw new Error('invalid mode');
     }
 
     if (!await xrc.supportsSession()) {
