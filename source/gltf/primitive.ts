@@ -1,4 +1,4 @@
-import { auxiliaries, Buffer, Context, VertexArray } from 'webgl-operate';
+import { auxiliaries, Buffer, Context, Initializable, VertexArray } from 'webgl-operate';
 const assert = auxiliaries.assert;
 
 import { vec3 } from 'gl-matrix';
@@ -6,9 +6,7 @@ import { gltf as GLTF, GLTF_ELEMENTS_PER_TYPE, GltfAsset } from 'gltf-loader-ts'
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
 import { Material } from './material';
-import { ATTRIB_LOCATIONS, PbrShader, ShaderFlags } from './pbrshader';
-// import { Bindable } from 'webgl-operate/lib/bindable';
-// import { Initializable } from 'webgl-operate/lib/initializable';
+import { PbrShader, ShaderFlags } from './pbrshader';
 
 // tslint:disable:max-classes-per-file
 
@@ -52,8 +50,7 @@ class VertexAttribute {
     }
 }
 
-// TODO!: Initializable, Bindable not exported...
-export class Primitive /*extends Initializable implements Bindable*/ {
+export class Primitive extends Initializable {
     private identifier: string;
     private vertexArray: VertexArray;
     /** Vertex attributes. Keys match the attribute semantic property names from glTF. */
@@ -164,7 +161,7 @@ export class Primitive /*extends Initializable implements Bindable*/ {
     }
 
     constructor(context: Context, identifier: string | undefined = 'Primitive') {
-        // super();
+        super();
 
         this.identifier = identifier;
         this.vertexArray = new VertexArray(context, identifier + '_VAO');

@@ -121,6 +121,7 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
     const advanced = gui.addFolder('Advanced');
     const variantCtrl = advanced.add(options, 'Variant', Object.keys(selectedSample.variants));
 
+    let skipVariantChange = false;
     sampleCtrl.onChange((sampleName: string) => {
         const sample = samples.find(((s) => s.name === sampleName))!;
         let variant = variantCtrl.getValue();
@@ -133,10 +134,15 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
         loadGltf(loader, url, renderer);
         history.pushState(url, undefined, `?model=${sampleName}&variant=${variant}`);
         updateDatDropdown(variantCtrl, Object.keys(sample.variants));
+        skipVariantChange = true;
         variantCtrl.setValue(variant);
     });
 
     variantCtrl.onChange((variant: string) => {
+        if (skipVariantChange) {
+            skipVariantChange = false;
+            return;
+        }
         const sampleName = sampleCtrl.getValue();
         const sample = samples.find(((s) => s.name === sampleName))!;
         const url = getSampleUrl(sample, BASE_MODEL_URI, variant);
@@ -180,8 +186,6 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
 }
 
 async function onload() {
-    // TODO!!: HACK - see https://github.com/cginternals/webgl-operate/issues/68
-    (gloperate.Context as any).CONTEXT_ATTRIBUTES.depth = true;
     const canvas = new gloperate.Canvas('example-canvas');
     const context = canvas.context;
     const renderer = new GltfRenderer();
