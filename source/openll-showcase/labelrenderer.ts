@@ -1,31 +1,30 @@
 
-import { assert } from './auxiliaries';
+import { auxiliaries, Navigation } from 'webgl-operate';
+const assert = auxiliaries.assert;
 
 import { mat4, vec2, vec3, vec4 } from 'gl-matrix';
 
-import { AccumulatePass } from './accumulatepass';
-import { AntiAliasingKernel } from './antialiasingkernel';
-import { BlitPass } from './blitpass';
-import { Camera } from './camera';
-import { Context } from './context';
-import { DefaultFramebuffer } from './defaultframebuffer';
-import { Framebuffer } from './framebuffer';
-import { MouseEventProvider } from './mouseeventprovider';
-import { Program } from './program';
-import { Renderbuffer } from './renderbuffer';
-import { Invalidate, Renderer } from './renderer';
-import { Shader } from './shader';
-import { Texture2 } from './texture2';
+import { AccumulatePass } from 'webgl-operate';
+import { AntiAliasingKernel } from 'webgl-operate';
+import { BlitPass } from 'webgl-operate';
+import { Camera } from 'webgl-operate';
+import { Context } from 'webgl-operate';
+import { DefaultFramebuffer } from 'webgl-operate';
+import { Framebuffer } from 'webgl-operate';
+import { MouseEventProvider } from 'webgl-operate';
+import { Program } from 'webgl-operate';
+import { Renderbuffer } from 'webgl-operate';
+import { Invalidate, Renderer } from 'webgl-operate';
+import { Shader } from 'webgl-operate';
+import { Texture2 } from 'webgl-operate';
 
-import { FontFace } from './fontface';
-import { FontLoader } from './fontloader';
-import { GlyphVertex, GlyphVertices } from './glyphvertices';
-import { Label } from './label';
-import { LabelGeometry } from './LabelGeometry';
-import { Text } from './text';
-import { Typesetter } from './typesetter';
-
-import { TestNavigation } from './debug/testnavigation';
+import { FontFace } from 'webgl-operate';
+import { FontLoader } from 'webgl-operate';
+import { GlyphVertex, GlyphVertices } from 'webgl-operate';
+import { Label } from 'webgl-operate';
+import { LabelGeometry } from 'webgl-operate';
+import { Text } from 'webgl-operate';
+import { Typesetter } from 'webgl-operate';
 
 /**
  * This is ugly, but it should do the trick for now:
@@ -53,7 +52,7 @@ export class LabelRenderer extends Renderer {
     protected _depthRenderbuffer: Renderbuffer;
     protected _intermediateFBO: Framebuffer;
 
-    protected _testNavigation: TestNavigation;
+    protected _navigation: Navigation;
 
     protected _fontFace: FontFace;
     protected _labelGeometry: LabelGeometry;
@@ -81,10 +80,10 @@ export class LabelRenderer extends Renderer {
         /* Create and configure program and geometry. */
 
         const vert = new Shader(this._context, gl.VERTEX_SHADER, 'glyphquad.vert');
-        vert.initialize(require('./shaders/glyphquad.vert'));
+        vert.initialize(require('webgl-operate/source/shaders/glyphquad.vert'));
 
         const frag = new Shader(this._context, gl.FRAGMENT_SHADER, 'glyphquad.frag');
-        frag.initialize(require('./shaders/glyphquad.frag'));
+        frag.initialize(require('webgl-operate/source/shaders/glyphquad.frag'));
 
         this._program = new Program(this._context);
         this._program.initialize([vert, frag]);
@@ -141,7 +140,9 @@ export class LabelRenderer extends Renderer {
         this._camera.near = 0.1;
         this._camera.far = 8.0;
 
-        this._testNavigation = new TestNavigation(() => this.invalidate(), mouseEventProvider);
+        // Initialize navigation
+        this._navigation = new Navigation(callback, mouseEventProvider);
+        this._navigation.camera = this._camera;
 
         return true;
     }
@@ -164,10 +165,9 @@ export class LabelRenderer extends Renderer {
 
 
     protected onUpdate(): boolean {
-        this._testNavigation.update();
+        this._navigation.update();
 
-        const redraw = this._testNavigation.altered;
-        this._testNavigation.reset();
+        const redraw = this._camera.altered || true; // TODO!!: initial frame not rendering without this
 
         if (!redraw && !this._altered.any) {
             return false;
@@ -176,6 +176,9 @@ export class LabelRenderer extends Renderer {
         if (this._altered.multiFrameNumber) {
             this._ndcOffsetKernel.width = this._multiFrameNumber;
         }
+
+        this._camera.altered = false;
+        this._altered.reset();
 
         return redraw;
     }

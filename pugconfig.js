@@ -20,7 +20,7 @@ const examples = require(websiteDir + '/examples.json');
 const WEBGL_OPERATE_DIST = './node_modules/webgl-operate/dist';
 
 const assets = [
-    ['./data', buildDir + '/data', ['*'], [], false],
+    ['./data', buildDir + '/data', ['**'], [], false],
     [websiteDir, buildDir, ['css/*.css', 'js/*.js', 'img/*.{svg,png,jpg}', 'fonts/*', '*.{svg,png,ico,xml,json}'], [], false],
     [WEBGL_OPERATE_DIST, buildDir + '/js', ['webgl-operate.{js,js.map}'], [], true],
     ['./node_modules/rxjs/bundles/', `${buildDir}/js`, ['rxjs.umd.min.js'], [], false]

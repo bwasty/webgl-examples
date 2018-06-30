@@ -14,7 +14,7 @@ module.exports = (env, options) => {
             'cornell-box': ['require.ts', 'cornell-box/example.ts'],
             'sky-triangle': ['require.ts', 'sky-triangle/example.ts'],
             'cubescape': ['require.ts', 'cubescape/example.ts'],
-            // 'openll-showcase': ['require.ts', 'openll-showcase/example.ts'],
+            'openll-showcase': ['require.ts', 'openll-showcase/example.ts'],
         },
         externals: {
             'webgl-operate': 'gloperate'

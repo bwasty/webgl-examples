@@ -2,13 +2,12 @@
 
 import * as gloperate from 'webgl-operate';
 
-import { OpenLLShowCase } from './showcase';
-
+import { LabelRenderer } from './labelrenderer';
 
 function onload() {
     const canvas = new gloperate.Canvas('example-canvas');
     const context = canvas.context;
-    const renderer = new OpenLLShowCase();
+    const renderer = new LabelRenderer();
     canvas.renderer = renderer;
 
     // export variables
