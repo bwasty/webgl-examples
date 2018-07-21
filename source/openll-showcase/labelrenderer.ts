@@ -173,13 +173,6 @@ export class LabelRenderer extends Renderer {
             return false;
         }
 
-        if (this._altered.multiFrameNumber) {
-            this._ndcOffsetKernel.width = this._multiFrameNumber;
-        }
-
-        this._camera.altered = false;
-        this._altered.reset();
-
         return redraw;
     }
 
@@ -201,6 +194,19 @@ export class LabelRenderer extends Renderer {
             this._intermediateFBO.resize(this._frameSize[0], this._frameSize[1]);
             this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
             this._camera.aspect = this._frameSize[0] / this._frameSize[1];
+            /* TODO
+             * update the geometry of the labels that use pt sizes (e.g. labels in screen space)
+             * and/or update: labels that get too small (to be readable) should not be rendered anymore
+             * (a.k.a. threshold for readability)
+             */
+            // this.setupScene();
+        }
+        if (this._altered.multiFrameNumber) {
+            this._ndcOffsetKernel.width = this._multiFrameNumber;
+        }
+
+        if (this._altered.framePrecision) {
+            this._accumulate.precision = this._framePrecision;
         }
 
         if (this._altered.clearColor) {
@@ -269,12 +275,16 @@ export class LabelRenderer extends Renderer {
     protected loadFont(context: Context): void {
         const loader = new FontLoader();
 
-        const fontFace: FontFace = loader.load(
-            context, './data/opensansr144/opensansr144.fnt', false, () => {
-                this.setupScene();
-                this.invalidate();
-            });
+        // This is a placeholder until the 'real' fontFace is loaded asynchronously by the fontLoader
+        const fontFace: FontFace = new FontFace(context);
 
+        loader.load(context, './data/opensansr144/opensansr144.fnt', false).then(
+            (fontFace) => {
+                this._fontFace = fontFace;
+                this.setupScene();
+                this.invalidate(true);
+            },
+        );
         this._fontFace = fontFace;
     }
 
@@ -301,27 +311,12 @@ export class LabelRenderer extends Renderer {
         const l = glyphVertices.length;
 
         for (let i = 0; i < l; i++) {
-            // TODO: shouldn't there be an easier way to achieve this?
-            // concat doesn't work as vec3 apparently is not an Array.
-
             const v = glyphVertices[i];
 
-            origins.push(v.origin[0]);
-            origins.push(v.origin[1]);
-            origins.push(v.origin[2]);
-
-            tans.push(v.tangent[0]);
-            tans.push(v.tangent[1]);
-            tans.push(v.tangent[2]);
-
-            ups.push(v.up[0]);
-            ups.push(v.up[1]);
-            ups.push(v.up[2]);
-
-            texCoords.push(v.uvRect[0]);
-            texCoords.push(v.uvRect[1]);
-            texCoords.push(v.uvRect[2]);
-            texCoords.push(v.uvRect[3]);
+            origins.push.apply(origins, v.origin);
+            tans.push.apply(tans, v.tangent);
+            ups.push.apply(ups, v.up);
+            texCoords.push.apply(texCoords, v.uvRect);
         }
 
         this._labelGeometry.setTexCoords(Float32Array.from(texCoords));
