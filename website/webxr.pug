@@ -2,7 +2,7 @@ extends example.pug
 
 
 block canvas
-  script(src='https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js')
+  script(src='https://cdn.jsdelivr.net/npm/webxr-polyfill@1.0.7/build/webxr-polyfill.js')
   script(src='js/webxr-version-shim.js')
   div(id='canvas-container' style='position: relative')
     canvas(id = 'example-canvas', data-backend = 'auto').img-fluid.w-100
