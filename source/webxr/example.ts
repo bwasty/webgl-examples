@@ -67,7 +67,17 @@ function initFallback() {
     initializeRenderer(canvas);
 }
 
+declare var WebXRPolyfill: any;
+declare var WebXRVersionShim: any;
+
 async function onload() {
+    if ((getQueryParam('allowPolyfill') || '1') === '1') {
+        const polyfill = new WebXRPolyfill();
+    }
+    // Apply the version shim after the polyfill is instantiated, to ensure
+    // that the polyfill also gets patched if necessary.
+    const versionShim = new WebXRVersionShim();
+
     const messageEl = document.getElementById('message')!;
     function message(msg: string, color: 'red' | 'black' | 'green' = 'red') {
         messageEl.innerHTML = msg;
