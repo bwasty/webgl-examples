@@ -89,9 +89,9 @@ async function onload() {
     const xrButton = document.getElementById('xr-button') as HTMLButtonElement;
 
     let xrc: XRController;
-    async function initializeController(): Promise<boolean> {
+    async function requestDevice(): Promise<boolean> {
         try {
-            await xrc.initialize();
+            await xrc.requestDevice();
             return true;
         } catch (e) {
             console.error(e);
@@ -108,14 +108,14 @@ async function onload() {
     }
 
     type Mode = 'present' | 'mirror' | 'magic-window';
-    const mode = getQueryParam('mode') || 'magic-window';
+    const mode = getQueryParam('mode') as Mode || 'magic-window';
 
     if (mode === 'present') {
         // This resembles the '1 - XR Presentation' example
         // https://immersive-web.github.io/webxr-samples/xr-presentation.html
 
         xrc = new gloperate.XRController({ immersive: true });
-        if (!await initializeController()) {
+        if (!await requestDevice()) {
             return;
         }
     } else if (mode === 'mirror') {
@@ -123,7 +123,7 @@ async function onload() {
         // https://immersive-web.github.io/webxr-samples/mirroring.html
 
         xrc = new gloperate.XRController({ immersive: true });
-        if (!await initializeController()) {
+        if (!await requestDevice()) {
             return;
         }
 
@@ -135,7 +135,7 @@ async function onload() {
         // https://immersive-web.github.io/webxr-samples/magic-window.html
 
         xrc = new gloperate.XRController({ immersive: false });
-        if (!await initializeController()) {
+        if (!await requestDevice()) {
             return;
         }
 

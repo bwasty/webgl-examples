@@ -10,4 +10,75 @@ block canvas
   span(id='message' style='margin-left: 10px; color: black; font-size: smaller') Initializing....
   p WebXR example. Requires a browser with WebXR support. On Chrome, you also need to enable the 'WebXR Device API' flag under #[code chrome://flags].
 
+block breakdown
+  include partials/code.pug
+  p.
+    The full source can be found #[a(href="https://github.com/cginternals/webgl-examples/tree/master/source/webxr") here].
+    The examples roughly follow the official #[a(href="https://immersive-web.github.io/webxr-samples/") WebXR samples].
+    Error handling is mostly ommitted for brevity, but function that may throw are annotated.
 
+  h3 XR Presentation
+
+  +code('xr-presentation', 'Basic XR presentation (adapted from example.ts)').
+    import { XRController, supportsXR } from 'webgl-operate';
+    import { WebXRRenderer } from './webxrrenderer';
+
+    if (!supportsXR() { console.log('No WebXR support'); return; }
+
+    let xrc = new XRController({ immersive: true });
+    await xrc.requestDevice(); // throws if no devices are found
+
+    if (!await xrc.supportsSession()) {
+        console.log('immersive session not supported.'); return
+    }
+
+    const xrButton = document.getElementById('xr-button') as HTMLButtonElement;
+    xrButton.onclick = async () => {
+      if (!xrc.session) {
+        await xrc.requestSession(); // may throw
+        const renderer = new WebXRRenderer();
+        xrc.canvas!.renderer = renderer;
+        xrc.session!.addEventListener('end', () => { ... });
+      } else {
+        await xrc.endSession();
+      }
+    }
+
+  +code('webxrrenderer', 'adapted from webxrenderer.ts').
+    class WebXRRenderer extends Renderer {
+      ...
+      protected onFrame(frameNumber: number, renderViews?: RenderView[]): void {
+        if (renderViews) {
+            this.drawRenderViews(renderViews);
+        } else {
+            // fallback - plain WebGL + mouse-based navigation
+            gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
+            gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
+
+            this._scene.draw(this.pbrShader);
+        }
+      }
+      protected drawRenderViews(renderViews: RenderView[]) {
+          const gl = this._context.gl;
+          if (renderViews.length === 1) {
+              // Optimization for the single-view case: bind once instead of for each primitive
+              // WebXR with a single view can happen for 'magic windows' and 'see-through' phone AR.
+              const view = renderViews[0];
+              const vp = view.viewport;
+              gl.viewport(vp.x, vp.y, vp.width, vp.height);
+
+              gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, view.viewProjectionMatrix);
+              gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
+
+              this._scene.draw(this.pbrShader); // don't pass render views
+          } else {
+              this._scene.draw(this.pbrShader, renderViews);
+          }
+      }
+
+      ...
+    }
+
+  h3 Mirroring
+  h3 Magic Window
+  h3 Fallback Rendering
