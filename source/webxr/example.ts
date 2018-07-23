@@ -46,6 +46,10 @@ function getQueryParam(param: string): string | undefined {
     }
 }
 
+const SAMPLE_ASSETS_BASE = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/master/media/';
+const SPACE_MODEL = SAMPLE_ASSETS_BASE + 'gltf/space/space.gltf';
+const CONTROLLER_MODEL = SAMPLE_ASSETS_BASE + 'gltf/controller/controller.gltf';
+
 let renderer: WebXRRenderer;
 function initializeRenderer(canvas: Canvas) {
     renderer = new WebXRRenderer();
@@ -57,8 +61,7 @@ function initializeRenderer(canvas: Canvas) {
     } else {
         const loader = new GltfLoader();
         // tslint:disable-next-line:max-line-length
-        const uri = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/master/media/gltf/space/space.gltf';
-        loadGltf(loader, uri, renderer);
+        loadGltf(loader, SPACE_MODEL, renderer);
     }
 }
 
@@ -171,6 +174,8 @@ async function onload() {
                 message('Ready.', 'green');
                 xrButton.innerHTML = 'Enter XR';
             });
+
+            // TODO!!: subscribe to select, selectstart, selectend
         }
     };
 
