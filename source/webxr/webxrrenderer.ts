@@ -1,11 +1,13 @@
 import { mat4, vec3 } from 'gl-matrix';
-import * as Stats from 'stats.js';
 import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Renderer, RenderView } from 'webgl-operate';
 
+import { XRInputPose } from 'webgl-operate/lib/webxr';
 import { PbrShader } from '../gltf/pbrshader';
 import { Scene } from '../gltf/scene';
 
 export class WebXRRenderer extends Renderer {
+    private frameCount = 0;
+
     protected pbrShader: PbrShader;
 
     // Camera and navigation
@@ -27,13 +29,9 @@ export class WebXRRenderer extends Renderer {
         this.invalidate();
     }
 
-    protected viewProjection = mat4.create(); // to avoid allocation per frame
-
     get context() {
         return this._context;
     }
-
-    stats: Stats;
 
     protected onInitialize(
         context: Context,
@@ -59,13 +57,6 @@ export class WebXRRenderer extends Renderer {
         gl.enable(gl.DEPTH_TEST);
         gl.clearColor(0, 0, 0, 1);
 
-        this.stats = new Stats();
-        // (this.stats.dom as any).height = '48px';
-        // (this.stats.dom as any).top = '12px';
-        // [].forEach.call(this.stats.dom.children, (child: any) => (child.style.display = ''));
-        // // 0: fps, 1: ms, 2: mb, 3+: custom
-        // (this.stats.dom.children[2] as any).style.display = 'none';
-
         return true;
     }
 
@@ -74,7 +65,7 @@ export class WebXRRenderer extends Renderer {
         this.pbrShader.uninitialize();
     }
 
-    // TODO!!: this is not called...
+    // NOTE: this is ONLY called in fallback mode (when WebXR is not available)
     protected onUpdate(): boolean {
         const gl = this.context.gl;
         // Resize
@@ -102,12 +93,15 @@ export class WebXRRenderer extends Renderer {
 
     protected onPrepare(): void { }
 
-    protected onFrame(frameNumber: number, renderViews?: RenderView[]): void {
-        this.stats.begin();
+    protected onFrame(frameNumber: number, renderViews?: RenderView[], inputPoses?: Array<XRInputPose | null>): void {
         const gl = this._context.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         this.pbrShader.bind();
+
+        // if (this.frameCount % 120 === 0) {
+        //     console.log(inputPoses);
+        // }
 
         if (renderViews) {
             this.drawRenderViews(renderViews);
@@ -122,7 +116,7 @@ export class WebXRRenderer extends Renderer {
         }
 
         this.pbrShader.unbind();
-        this.stats.end();
+        ++this.frameCount;
     }
 
     protected drawRenderViews(renderViews: RenderView[]) {
@@ -145,9 +139,7 @@ export class WebXRRenderer extends Renderer {
         }
     }
 
-    protected onSwap(): void {
-        this.invalidate();
-    }
+    protected onSwap(): void { }
 
     protected setCameraFromBounds() {
         const bounds = this._scene.bounds;
