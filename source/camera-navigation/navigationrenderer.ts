@@ -125,7 +125,6 @@ export class CameraNavigationRenderer extends Renderer {
     protected onSwap(): void {
         // Blit into framebuffer
         this._blit.frame();
-        this.invalidate();
     }
 
     protected onInitialize(context: Context, callback: Invalidate, mouseEventProvider: MouseEventProvider): boolean {

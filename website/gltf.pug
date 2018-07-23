@@ -14,11 +14,11 @@ block canvas
 
 block breakdown
   p
-    | The full source can be found #[a(href="https://github.com/cginternals/webgl-examples/tree/gltf/source/gltf") here].
+    | The full source can be found #[a(href="https://github.com/cginternals/webgl-examples/tree/master/source/gltf") here].
     | Much of it may eventually be integrated in webgl-operate - for now it's recommended to copy the files to your project.
     | Here are the essential parts in a few snippets:
   include partials/code.pug
-  +code('example-code', 'Setting up the renderer (example.ts)')
+  +code('example-code-1', 'Setting up the renderer (example.ts)')
     | import { Canvas } from 'webgl-operate';
     | import { GltfRenderer } from './gltfrenderer';
     | const canvas = new Canvas('example-canvas');
@@ -27,7 +27,7 @@ block breakdown
 
   | We're using #[a(href="https://www.npmjs.com/package/gltf-loader-ts") gltf-loader-ts] to handle
   | loading and basic parsing of glTF files.
-  +code('example-code', 'Loading glTF files (example.ts)')
+  +code('example-code-2', 'Loading glTF files (example.ts)')
     | import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
     | import { Asset } from './asset';
     |
@@ -43,7 +43,7 @@ block breakdown
     | At the lowest level, #[code GltfAsset] contains raw binary buffer and image data, whereas our #[code Asset] class uploads the data
     | to the GPU on creation and only keeps WebGL handles for issuing draw calls.
   h3 A deeper look at the rendering logic
-  +code('example-code', 'gltfrenderer.ts')
+  +code('example-code-3', 'gltfrenderer.ts')
     | protected onFrame(frameNumber: number): void {
     |     const gl = this._context.gl;
     |
@@ -62,7 +62,7 @@ block breakdown
 
   | Draw calls are batched by material and materials are sorted by transparency
   | (opaque materials are rendered first; but no depth sorting occurs).
-  +code('example-code', 'scene.ts')
+  +code('example-code-4', 'scene.ts')
     | draw(camera: Camera, shader: PbrShader) {
     |     const gl = this.context.gl;
     |     for (const material of this.sortedMaterials) {
