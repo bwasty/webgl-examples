@@ -125,9 +125,7 @@ export class GltfRenderer extends Renderer {
         this.pbrShader.unbind();
         this.stats.end();
     }
-    protected onSwap(): void {
-        this.invalidate();
-    }
+    protected onSwap(): void { }
 
     protected setCameraFromBounds() {
         const bounds = this._scene.bounds;
