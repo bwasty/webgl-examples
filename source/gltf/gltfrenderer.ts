@@ -13,18 +13,14 @@ export class GltfRenderer extends Renderer {
     protected _navigation: Navigation;
 
     protected _scene: Scene;
-    protected _sceneChanged: boolean;
     set scene(scene: Scene) {
         if (this._scene) {
             this._scene.uninitialize();
         }
         this._scene = scene;
-        this._sceneChanged = true;
-
         this.setCameraFromBounds();
 
-        // TODO!!: hack? (_sceneChanged doesn't work...)
-        this.invalidate();
+        this.invalidate(true);
     }
 
     get context() {
@@ -65,7 +61,9 @@ export class GltfRenderer extends Renderer {
         (this.stats.dom as any).top = '12px';
         [].forEach.call(this.stats.dom.children, (child: any) => (child.style.display = ''));
         // 0: fps, 1: ms, 2: mb, 3+: custom
-        (this.stats.dom.children[2] as any).style.display = 'none';
+        if (this.stats.dom.children[2]) { // only available on Chrome
+            (this.stats.dom.children[2] as any).style.display = 'none';
+        }
 
         return true;
     }
@@ -96,11 +94,9 @@ export class GltfRenderer extends Renderer {
 
         // Reset state
         const altered = this._altered.any ||
-            this._camera.altered ||
-            this._sceneChanged;
+            this._camera.altered;
         this._altered.reset();
         this._camera.altered = false;
-        this._sceneChanged = false;
 
         // If anything has changed, render a new frame
         return altered;
