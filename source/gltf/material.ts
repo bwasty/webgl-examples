@@ -38,6 +38,10 @@ export class Material {
 
     doubleSided = false;
 
+    // This texture is bound to unused units used to avoid annoying warnings in Chrome
+    // (e.g. `WARNING: there is no texture bound to the unit 0`)
+    emptyTexture: Texture2;
+
     static async fromGltf(materialIndex: GLTF.GlTfId, asset: Asset): Promise<Material> {
         const gMaterial = asset.gAsset.gltf.materials![materialIndex];
         const mat = new Material(asset.context);
@@ -170,6 +174,10 @@ export class Material {
 
     constructor(context: Context) {
         this.context = context;
+        const gl = this.context.gl;
+
+        this.emptyTexture = new Texture2(this.context, 'emptyTexture');
+        this.emptyTexture.initialize(1, 1, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE);
     }
 
     get shaderFlags(): ShaderFlags {
@@ -209,26 +217,36 @@ export class Material {
         if (this.baseColorTexture) {
             this.baseColorTexture.bind(gl.TEXTURE0);
             gl.uniform1i(uniforms.u_BaseColorTexCoord, this.baseColorTexCoord);
+        } else {
+            this.emptyTexture.bind(gl.TEXTURE0);
         }
         if (this.normalTexture) {
             this.normalTexture.bind(gl.TEXTURE1);
             gl.uniform1i(uniforms.u_NormalTexCoord, this.normalTexCoord);
             gl.uniform1f(uniforms.u_NormalScale, this.normalScale);
+        } else {
+            this.emptyTexture.bind(gl.TEXTURE1);
         }
         if (this.emissiveTexture) {
             this.emissiveTexture.bind(gl.TEXTURE2);
             gl.uniform1i(uniforms.u_EmissiveTexCoord, this.emissiveTexCoord);
             gl.uniform3fv(uniforms.u_EmissiveFactor!, this.emissiveFactor);
+        } else {
+            this.emptyTexture.bind(gl.TEXTURE2);
         }
         if (this.metallicRoughnessTexture) {
             this.metallicRoughnessTexture.bind(gl.TEXTURE3);
             gl.uniform1i(uniforms.u_MetallicRoughnessTexCoord, this.metallicRoughnessTexCoord);
+        } else {
+            this.emptyTexture.bind(gl.TEXTURE3);
         }
         gl.uniform2f(uniforms.u_MetallicRoughnessValues, this.metallicFactor, this.roughnessFactor);
         if (this.occlusionTexture) {
             this.occlusionTexture.bind(gl.TEXTURE4);
             gl.uniform1i(uniforms.u_OcclusionTexCoord, this.occlusionTexCoord);
             gl.uniform1f(uniforms.u_OcclusionStrength, this.occlusionStrength);
+        } else {
+            this.emptyTexture.bind(gl.TEXTURE4);
         }
     }
 
