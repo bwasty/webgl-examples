@@ -1,7 +1,7 @@
 import { GltfAsset, GltfLoader } from 'gltf-loader-ts';
 import * as gloperate from 'webgl-operate';
 
-import { Canvas, supportsXR, XRController } from 'webgl-operate';
+import { Canvas, XRController } from 'webgl-operate';
 import { XRPresentationContext } from 'webgl-operate/lib/webxr';
 import { Asset } from '../gltf/asset';
 import { WebXRRenderer } from './webxrrenderer';
@@ -101,7 +101,7 @@ async function onload() {
         }
     }
 
-    if (!supportsXR()) {
+    if (!XRController.supportsXR()) {
         message('Your browser does not support WebXR.');
         initFallback();
         return;
