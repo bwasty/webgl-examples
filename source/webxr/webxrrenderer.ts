@@ -1,11 +1,11 @@
-import { mat4, vec3 } from 'gl-matrix';
-import { Camera, Context, Invalidate, MouseEventProvider, Navigation, Renderer, RenderView } from 'webgl-operate';
+import { vec3 } from 'gl-matrix';
+import { Camera, Context, Invalidate, MouseEventProvider, Navigation, XRRenderer, RenderView, FrameData } from 'webgl-operate';
 
 import { XRInputPose } from 'webgl-operate/lib/webxr';
 import { PbrShader } from '../gltf/pbrshader';
 import { Scene } from '../gltf/scene';
 
-export class WebXRRenderer extends Renderer {
+export class WebXRRenderer extends XRRenderer {
     private frameCount = 0;
 
     protected pbrShader: PbrShader;
@@ -15,18 +15,15 @@ export class WebXRRenderer extends Renderer {
     protected _navigation: Navigation;
 
     protected _scene: Scene;
-    protected _sceneChanged: boolean;
     set scene(scene: Scene) {
         if (this._scene) {
             this._scene.uninitialize();
         }
         this._scene = scene;
-        this._sceneChanged = true;
 
         this.setCameraFromBounds();
 
-        // TODO!!: hack? (_sceneChanged doesn't work...)
-        this.invalidate();
+        this.invalidate(true);
     }
 
     get context() {
@@ -81,19 +78,15 @@ export class WebXRRenderer extends Renderer {
 
         // Reset state
         const altered = this._altered.any ||
-            this._camera.altered ||
-            this._sceneChanged;
+            this._camera.altered;
         this._altered.reset();
         this._camera.altered = false;
-        this._sceneChanged = false;
 
         // If anything has changed, render a new frame
         return altered;
     }
 
-    protected onPrepare(): void { }
-
-    protected onFrame(frameNumber: number, renderViews?: RenderView[], inputPoses?: Array<XRInputPose | null>): void {
+    protected onFrame(frameNumber: number): void {
         const gl = this._context.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -103,43 +96,48 @@ export class WebXRRenderer extends Renderer {
         //     console.log(inputPoses);
         // }
 
-        if (renderViews) {
-            this.drawRenderViews(renderViews);
-        } else {
-            // fallback - plain WebGL + mouse-based navigation
-            gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
-            gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
+        // fallback - plain WebGL + mouse-based navigation
+        gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
+        gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
 
-            if (this._scene) {
-                this._scene.draw(this.pbrShader);
-            }
+        if (this._scene) {
+            this._scene.draw(this.pbrShader);
         }
 
         this.pbrShader.unbind();
         ++this.frameCount;
     }
 
-    protected drawRenderViews(renderViews: RenderView[]) {
+    protected onXRFrame(frameData: FrameData) {
         const gl = this._context.gl;
-        if (this._scene) {
-            if (renderViews.length === 1) {
-                // Optimization for the single-view case: bind once instead of for each primitive
-                // WebXR with a single view can happen for 'magic windows' and 'see-through' phone AR.
-                const view = renderViews[0];
-                const vp = view.viewport;
-                gl.viewport(vp.x, vp.y, vp.width, vp.height);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-                gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, view.viewProjectionMatrix);
-                gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
-
-                this._scene.draw(this.pbrShader); // don't pass render views
-            } else {
-                this._scene.draw(this.pbrShader, renderViews);
-            }
+        if (!this._scene) {
+            return;
         }
-    }
 
-    protected onSwap(): void { }
+        this.pbrShader.bind();
+
+        // TODO!: bind frameData.session.baseLayer.framebuffer here? (currently done in XRController)
+        const renderViews = frameData.renderViews;
+        if (renderViews.length === 1) {
+            // Optimization for the single-view case: bind once instead of for each primitive
+            // WebXR with a single view can happen for 'magic windows' and 'see-through' phone AR.
+            const view = renderViews[0];
+            const vp = view.viewport;
+            gl.viewport(vp.x, vp.y, vp.width, vp.height);
+
+            gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, view.viewProjectionMatrix);
+            gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
+
+            this._scene.draw(this.pbrShader); // don't pass render views
+        } else {
+            this._scene.draw(this.pbrShader, renderViews);
+        }
+
+        this.pbrShader.unbind();
+        ++this.frameCount;
+    }
 
     protected setCameraFromBounds() {
         const bounds = this._scene.bounds;

@@ -82,3 +82,17 @@ block breakdown
   h3 Mirroring
   h3 Magic Window
   h3 Fallback Rendering
+
+  h3 Adapting an existing Renderer for WebXR
+  Derive from `XRRenderer` instead of `Renderer` and implement the abstract `onXRFrame` method
+  +code('adapt', 'adapted from webxrenderer.ts').
+    export class WebXRRenderer extends XRRenderer {
+      ...
+    }
+
+    protected onXRFrame(frameData: FrameData) {
+    }
+
+  Use the data from the `FrameData` to set up your view parameters.
+
+
