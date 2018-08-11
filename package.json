@@ -22,10 +22,11 @@
     "devDependencies": {
         "@types/dat.gui": "~0.7.0",
         "@types/gl-matrix": "~2.4.0",
-        "cross-env": "~5.1.4",
-        "gl-matrix": "~2.6.1",
         "@types/stats.js": "~0.17.0",
+        "cross-env": "~5.1.4",
         "dat.gui": "~0.7.2",
+        "fs-broadcaster": "0.0.8",
+        "gl-matrix": "~2.6.1",
         "glob": "~7.1.2",
         "gltf-loader-ts": "~0.3.1",
         "http-server": "~0.11.1",
@@ -33,11 +34,11 @@
         "pug": "~2.0.3",
         "rimraf": "~2.6.2",
         "rxjs": "~6.2.1",
+        "simple-dropzone": "~0.5.3",
         "source-map-support": "~0.5.6",
+        "stats.js": "~0.17.0",
         "ts-loader": "~4.3.0",
         "tslint": "~5.10.0",
-        "simple-dropzone": "~0.5.3",
-        "stats.js": "~0.17.0",
         "typescript": "~2.8.1",
         "webgl-operate": "~0.3.5",
         "webpack": "~4.9.1",
@@ -55,7 +56,9 @@
         "cleanup": "rimraf ./build",
         "start": "http-server ./build -c-1 -a 0.0.0.0 -p 4000",
         "start-watch": "run-p build-watch pug-watch start",
-        "analyze": "cross-env ANALYZE=true webpack-cli --mode production"
+        "analyze": "cross-env ANALYZE=true webpack-cli --mode production",
+        "gltf-watch": "fs-broadcaster -d build/**/*.gl*",
+        "start-gltf": "run-p start-watch gltf-watch"
     },
     "keywords": [
         "webgl",

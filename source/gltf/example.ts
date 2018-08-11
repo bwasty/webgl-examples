@@ -185,6 +185,25 @@ async function setupDatGUI(renderer: GltfRenderer, loader: GltfLoader) {
     };
 }
 
+// See fs-broadcaster on npm
+interface FsBroadcasterMessage {
+    event: string;
+    path: string;
+    ext: string;
+    stamp: string;
+}
+
+function setupWebsocketListener(loader: GltfLoader, uri: string, renderer: GltfRenderer) {
+    const ws = new WebSocket('ws://0.0.0.0:1992');
+
+    ws.onmessage = (msg) => {
+        const data: FsBroadcasterMessage = JSON.parse(msg.data);
+        if (data.event === 'change' && data.path.endsWith(uri)) {
+            loadGltf(loader, uri, renderer);
+        }
+    };
+}
+
 async function onload() {
     const canvas = new gloperate.Canvas('example-canvas');
     const context = canvas.context;
@@ -200,7 +219,7 @@ async function onload() {
         const suffix = variant === 'glTF-Binary' ? 'glb' : 'gltf';
         uri = `${BASE_MODEL_URI}${model}/${variant}/${model}.${suffix}`;
     } else {
-        uri = BASE_MODEL_URI + `DamagedHelmet/glTF/DamagedHelmet.gltf`;
+        uri = getQueryParam('uri') || BASE_MODEL_URI + `DamagedHelmet/glTF/DamagedHelmet.gltf`;
     }
 
     setupDragAndDrop(loader, renderer);
@@ -208,6 +227,8 @@ async function onload() {
     setupDatGUI(renderer, loader);
 
     loadGltf(loader, uri, renderer);
+
+    setupWebsocketListener(loader, uri, renderer);
 
     canvas.element.addEventListener('dblclick', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
     canvas.element.addEventListener('touchstart', () => gloperate.viewer.Fullscreen.toggle(canvas.element));
