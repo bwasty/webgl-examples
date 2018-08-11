@@ -1,0 +1,27 @@
+{
+  "name": "webpack-minimal",
+  "version": "0.0.1",
+  "description": "minimal webgl-operate setup",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cginternals/webgl-examples.git"
+  },
+  "scripts": {
+    "build": "webpack-cli --mode production",
+    "watch": "webpack-cli --mode development --watch",
+    "start": "webpack-dev-server --mode development --open"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "awesome-typescript-loader": "^5.2.0",
+    "html-webpack-plugin": "^3.2.0",
+    "typescript": "^2.9.1",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5"
+  },
+  "dependencies": {
+    "webgl-operate": "^0.3.8"
+  }
+}
