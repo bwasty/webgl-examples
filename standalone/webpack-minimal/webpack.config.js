@@ -2,11 +2,15 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
-  mode: process.env.WEBPACK_SERVE ? 'development' : 'production',
   resolve: {
     extensions: ['.ts', '.tsx', '.js']
   },
-  devtool: 'inline-source-map',
+  devtool: 'source-map',
+  devServer: {
+    contentBase: './dist',
+    overlay: true,
+    host: '0.0.0.0',
+  },
   module: {
     rules: [
       {

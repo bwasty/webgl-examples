@@ -9,13 +9,12 @@
   "scripts": {
     "build": "webpack-cli --mode production",
     "watch": "webpack-cli --mode development --watch",
-    "start": "webpack-serve --content dist",
+    "start": "webpack-dev-server --mode development",
     "analyze": "cross-env ANALYZE=true webpack-cli --mode production"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "awesome-typescript-loader": "^5.2.0",
     "clean-webpack-plugin": "^0.1.19",
     "cross-env": "^5.2.0",
     "css-loader": "^1.0.0",
@@ -26,7 +25,7 @@
     "webpack": "^4.16.5",
     "webpack-bundle-analyzer": "^2.13.1",
     "webpack-cli": "^3.1.0",
-    "webpack-serve": "^2.0.2"
+    "webpack-dev-server": "^3.1.5"
   },
   "dependencies": {
     "webgl-operate": "^0.3.8"
