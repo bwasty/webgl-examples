@@ -293,7 +293,7 @@ else
     vec3 reflection = -normalize(reflect(v, n));
 
     float NdotL = clamp(dot(n, l), 0.001, 1.0);
-    float NdotV = abs(dot(n, v)) + 0.001;
+    float NdotV = clamp(abs(dot(n, v)), 0.001, 1.0);
     float NdotH = clamp(dot(n, h), 0.0, 1.0);
     float LdotH = clamp(dot(l, h), 0.0, 1.0);
     float VdotH = clamp(dot(v, h), 0.0, 1.0);
