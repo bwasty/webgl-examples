@@ -49,7 +49,7 @@ function build() {
     render('index', 'index', { 'examples': examples });
 
     examples.forEach((example) => {
-        render(example.target, example.target, { 'example': example });
+        render(example.target, example.target, { 'example': example, 'watch': watch });
     });
 
     build_pending = false;
