@@ -1,5 +1,71 @@
-<!DOCTYPE html><html lang="en"><head><meta http-equiv="x-ua-compatible" content="ie=edge"><meta charset="utf-8"><meta name="viewport" content="width=device-width initial-scale=1"><title>webgl-operate</title><meta name="robots" content="noindex"><link rel="stylesheet" href="css/bootstrap-4.1.1.min.css"><link rel="stylesheet" href="css/fonts.css"><link rel="stylesheet" href="css/style.css"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png"><script src="js/jquery-3.2.1.slim.min.js"></script><script src="js/bootstrap-4.1.1.bundle.min.js"></script><script src="js/clipboard.min.js"></script><script src="js/rxjs.umd.min.js"></script></head><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.12.0/build/styles/vs.min.css"><style>.hljs {
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="x-ua-compatible" content="ie=edge"><meta charset="utf-8"><meta name="viewport" content="width=device-width initial-scale=1"><title>webgl-operate</title><meta name="robots" content="noindex"><link rel="stylesheet" href="css/bootstrap-4.1.1.min.css"><link rel="stylesheet" href="css/fonts.css"><link rel="stylesheet" href="css/style.css"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png"><script src="js/jquery-3.2.1.slim.min.js"></script><script src="js/bootstrap-4.1.1.bundle.min.js"></script><script src="js/rxjs.umd.min.js"></script></head><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@9.12.0/build/styles/vs.min.css"><style>.hljs {
   background: initial;
 }</style><script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script><script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/typescript.min.js"></script><script>hljs.initHighlightingOnLoad();
 </script><body class="bg-light"><nav class="navbar fixed-top navbar-expand-md navbar-dark bg-dark"><div class="container"><a class="nav-link px-0" href="https://cginternals.gmbh"><span class="d-none d-md-block"><img class="img-fluid mt-0" src="img/cginternals.svg" alt="cginternals logo"></span><span class="d-block d-md-none"><img class="img-fluid mt-0" src="img/navicon.svg" alt="cginternals icon"></span></a><button class="navbar-toggler ml-auto" type="button" data-toggle="dropdown" id="navbarDropdown" aria-expanded="false" aria-haspopup="true">&#9776;</button><div class="dropdown-menu dropdown-menu-right dropdown-dark bg-dark" aria-labelledby="navbarDropdown"><a class="dropdown-item" href="/">EXAMPLES</a><a class="dropdown-item" href="/doc/">DOCUMENTATION</a><a class="dropdown-item" href="https://github.com/cginternals/webgl-operate">GITHUB</a></div><div class="collapse navbar-collapse"><ul class="navbar-nav ml-auto" id="nav"><li class="nav-item"><a class="nav-link" href="/">EXAMPLES</a></li><li class="nav-item"><a class="nav-link" href="/doc/">DOCUMENTATION</a></li><li class="nav-item"><a class="nav-link" href="https://github.com/cginternals/webgl-operate">GITHUB</a></li></ul></div></div></nav><section class="container"><script src="https://cdn.jsdelivr.net/npm/webxr-polyfill@1.0.7/build/webxr-polyfill.js"></script><script src="js/webxr-version-shim.js"></script><div id="canvas-container" style="position: relative"><canvas class="img-fluid w-100" id="example-canvas" data-backend="auto"></canvas></div><button id="xr-button" disabled>Enter XR</button><span id="message" style="margin-left: 10px; color: black; font-size: smaller">Initializing....</span><p>WebXR example. Requires a browser with WebXR support. On Chrome, you also need to enable the 'WebXR Device API' flag under <code>chrome://flags</code>.</p></section><section class="container mt-4"><div class="row"><div class="col"><h2>WEBXR&ensp;|&ensp;Source Code Breakdown</h2><p class="lead">Example using <a href="https://github.com/cginternals/webgl-operate">webgl-operate</a> by
-<a href="https://github.com/bwasty">bwasty</a>.</p><hr></div></div></section><script src="js/webgl-operate.js"></script><script src="webxr.js"></script><script src="http://localhost:35729/livereload.js"></script><footer class="text-center" id="footer">Copyright &copy; 2015&thinsp;&ndash;&thinsp;2018  <a href="https://cginternals.com">CG Internals</a><br><small>This type of website is critically endangered: static, self-hosted, single-origin, as well as tracking and cookie-free. <a href="https://cginternals.com/en/privacy-policy.html">Privacy Policy</a></small></footer></body></html>
+<a href="https://github.com/bwasty">bwasty</a>.</p><hr><p>The full source can be found <a href="https://github.com/cginternals/webgl-examples/tree/master/source/webxr">here</a>.
+The examples roughly follow the official <a href="https://immersive-web.github.io/webxr-samples/">WebXR samples</a>.
+Error handling is mostly ommitted for brevity, but function that may throw are annotated.
+</p><h3>XR Presentation</h3><p class="mb-1 text-secondary">Basic XR presentation (adapted from example.ts)</p><div class="btn-clipboard-parent"><div class="btn-clipboard-parent"><button class="btn btn-sm btn-clipboard text-muted" type="button" data-clipboard-target="#xr-presentation">Copy to Clipboard</button><pre class="alert alert-secondary"><code class="typescript" id="xr-presentation">import { XRController, supportsXR } from 'webgl-operate';
+import { WebXRRenderer } from './webxrrenderer';
+
+if (!supportsXR() { console.log('No WebXR support'); return; }
+
+let xrc = new XRController({ immersive: true });
+await xrc.requestDevice(); // throws if no devices are found
+
+if (!await xrc.supportsSession()) {
+    console.log('immersive session not supported.'); return
+}
+
+const xrButton = document.getElementById('xr-button') as HTMLButtonElement;
+xrButton.onclick = async () => {
+  if (!xrc.session) {
+    await xrc.requestSession(); // may throw
+    const renderer = new WebXRRenderer();
+    xrc.canvas!.renderer = renderer;
+    xrc.session!.addEventListener('end', () => { ... });
+  } else {
+    await xrc.endSession();
+  }
+}
+</code></pre></div></div><p class="mb-1 text-secondary">adapted from webxrenderer.ts</p><div class="btn-clipboard-parent"><div class="btn-clipboard-parent"><button class="btn btn-sm btn-clipboard text-muted" type="button" data-clipboard-target="#webxrrenderer">Copy to Clipboard</button><pre class="alert alert-secondary"><code class="typescript" id="webxrrenderer">class WebXRRenderer extends Renderer {
+  ...
+  protected onFrame(frameNumber: number, renderViews?: RenderView[]): void {
+    if (renderViews) {
+        this.drawRenderViews(renderViews);
+    } else {
+        // fallback - plain WebGL + mouse-based navigation
+        gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, this._camera.viewProjection);
+        gl.uniform3fv(this.pbrShader.uniforms.u_Camera, this._camera.eye);
+
+        this._scene.draw(this.pbrShader);
+    }
+  }
+  protected drawRenderViews(renderViews: RenderView[]) {
+      const gl = this._context.gl;
+      if (renderViews.length === 1) {
+          // Optimization for the single-view case: bind once instead of for each primitive
+          // WebXR with a single view can happen for 'magic windows' and 'see-through' phone AR.
+          const view = renderViews[0];
+          const vp = view.viewport;
+          gl.viewport(vp.x, vp.y, vp.width, vp.height);
+
+          gl.uniformMatrix4fv(this.pbrShader.uniforms.u_ViewProjection, false, view.viewProjectionMatrix);
+          gl.uniform3fv(this.pbrShader.uniforms.u_Camera, view.cameraPosition);
+
+          this._scene.draw(this.pbrShader); // don't pass render views
+      } else {
+          this._scene.draw(this.pbrShader, renderViews);
+      }
+  }
+
+  ...
+}
+</code></pre></div></div><h3>Mirroring</h3><h3>Magic Window</h3><h3>Fallback Rendering</h3><h3>Adapting an existing Renderer for WebXR</h3>Derive from <code>XRRenderer</code> instead of <code>Renderer</code> and implement the abstract `onXRFrame` method<p class="mb-1 text-secondary">adapted from webxrenderer.ts</p><div class="btn-clipboard-parent"><div class="btn-clipboard-parent"><button class="btn btn-sm btn-clipboard text-muted" type="button" data-clipboard-target="#adapt">Copy to Clipboard</button><pre class="alert alert-secondary"><code class="typescript" id="adapt">export class WebXRRenderer extends XRRenderer {
+  ...
+}
+
+protected onXRFrame(frameData: FrameData) {
+}
+</code></pre></div></div>Use the data from the <code>FrameData</code> to set up your view parameters.</div></div></section><script src="js/webgl-operate.js"></script><script src="webxr.js"></script><script src="js/clipboard.min.js"></script><script>new Clipboard('.btn-clipboard');
+</script><script src="http://localhost:35729/livereload.js"></script><footer class="text-center" id="footer">Copyright &copy; 2015&thinsp;&ndash;&thinsp;2018  <a href="https://cginternals.com">CG Internals</a><br><small>This type of website is critically endangered: static, self-hosted, single-origin, as well as tracking and cookie-free. <a href="https://cginternals.com/en/privacy-policy.html">Privacy Policy</a></small></footer></body></html>
