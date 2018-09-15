@@ -50,6 +50,6 @@
         "authors": [
             "bwasty"
         ],
-        "caption": "WebXR example"
+        "caption": "Example for the WebXR Device API (successor of WebVR)"
     }
 ]
