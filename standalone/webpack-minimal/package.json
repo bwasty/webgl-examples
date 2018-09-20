@@ -15,6 +15,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@types/gl-matrix": "^2.4.1",
     "clean-webpack-plugin": "^0.1.19",
     "cross-env": "^5.2.0",
     "css-loader": "^1.0.0",
@@ -29,6 +30,7 @@
     "webpack-glsl-loader": "^1.0.1"
   },
   "dependencies": {
+    "gl-matrix": "^2.8.1",
     "webgl-operate": "^0.3.8"
   }
 }

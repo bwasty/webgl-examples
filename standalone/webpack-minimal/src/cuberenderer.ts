@@ -1,4 +1,5 @@
 
+import { mat4, vec3 } from 'gl-matrix';
 
 import { Camera } from 'webgl-operate/lib/camera';
 import { Context } from 'webgl-operate/lib/context';
