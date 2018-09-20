@@ -1,8 +1,8 @@
 
-import { assert } from 'webgl-operate/lib-esm/auxiliaries';
-import { Buffer } from 'webgl-operate/lib-esm/buffer';
-import { Context } from 'webgl-operate/lib-esm/context';
-import { Geometry } from 'webgl-operate/lib-esm/geometry';
+import { assert } from 'webgl-operate/lib/auxiliaries';
+import { Buffer } from 'webgl-operate/lib/buffer';
+import { Context } from 'webgl-operate/lib/context';
+import { Geometry } from 'webgl-operate/lib/geometry';
 
 export class Cube extends Geometry {
 

@@ -1,13 +1,12 @@
 
-import { mat4, vec3 } from 'gl-matrix';
 
-import { Camera } from 'webgl-operate/lib-esm/camera';
-import { Context } from 'webgl-operate/lib-esm/context';
-import { MouseEventProvider } from 'webgl-operate/lib-esm/mouseeventprovider';
-import { Navigation } from 'webgl-operate/lib-esm/navigation';
-import { Program } from 'webgl-operate/lib-esm/program';
-import { Invalidate, Renderer } from 'webgl-operate/lib-esm/renderer';
-import { Shader } from 'webgl-operate/lib-esm/shader';
+import { Camera } from 'webgl-operate/lib/camera';
+import { Context } from 'webgl-operate/lib/context';
+import { MouseEventProvider } from 'webgl-operate/lib/mouseeventprovider';
+import { Navigation } from 'webgl-operate/lib/navigation';
+import { Program } from 'webgl-operate/lib/program';
+import { Invalidate, Renderer } from 'webgl-operate/lib/renderer';
+import { Shader } from 'webgl-operate/lib/shader';
 
 import { Cube } from './cube';
 

@@ -1,6 +1,6 @@
 import './styles.css';
 
-import { Canvas } from 'webgl-operate/lib-esm/canvas';
+import { Canvas } from 'webgl-operate/lib/canvas';
 import { CubeRenderer } from './cuberenderer';
 
 const canvasEl = document.querySelector('canvas')!;
