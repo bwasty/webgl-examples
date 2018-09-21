@@ -56,13 +56,16 @@ export class MetaballRenderer extends Renderer {
     protected onInitialize(context: Context, callback: Invalidate, mouseEventProvider: MouseEventProvider): boolean {
         const gl = this._context.gl;
 
-        const vert = new Shader(this._context, gl.VERTEX_SHADER, 'testrenderer.vert');
-        vert.initialize(require('./testrenderer.vert'));
-        const frag = new Shader(this._context, gl.FRAGMENT_SHADER, 'testrenderer.frag');
-        frag.initialize(require('./testrenderer.frag'));
+        const vert = new Shader(this._context, gl.VERTEX_SHADER, 'particle_draw_5.vert');
+        vert.initialize(require('./particle_draw_5.vert'));
+        const frags = ['particle_draw_5_3.frag', 'metaballs.frag', 'cooktorrance.frag'].map((fileName) => {
+            const frag = new Shader(this._context, gl.FRAGMENT_SHADER, fileName);
+            frag.initialize(require('./' + fileName));
+            return frag;
+        });
 
         this._program = new Program(this._context);
-        this._program.initialize([vert, frag]);
+        this._program.initialize([vert, ...frags]);
 
         // Initialize camera
         this._camera = new Camera();
