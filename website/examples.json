@@ -35,5 +35,14 @@
             "chistopher"
         ],
         "caption": ""
+    },
+    {
+        "target": "metaballs",
+        "title": "Metaballs",
+        "authors": [
+            "bwasty",
+            "cgcostume"
+        ],
+        "caption": ""
     }
 ]
