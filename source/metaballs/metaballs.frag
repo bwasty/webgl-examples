@@ -5,25 +5,6 @@ const float INFINITY = 1e+4;
 const int SIZE = 12;
 const float TRESHOLD = 0.66;
 
-struct Sphere
-{
-	vec3 position;
-	float radius;
-};
-
-struct Material
-{
-	vec4 sr; // vec3 specular, float reflectance
-	vec4 dr; // vec3 diffuse, float roughness
-};
-
-struct Ray
-{
-	vec3 origin;
-	vec3 direction;
-};
-
-
 Sphere blobs[16];
 Material materials[16];
 
@@ -61,10 +42,10 @@ bool intersect(
 {
 	vec3  d = ray.origin - blob.position;
 
-	float b = 2 * dot(ray.direction, d);
+	float b = 2.0 * dot(ray.direction, d);
 	float c = dot(d, d) - blob.radius * blob.radius;
 
-	float t = b * b - 4 * c;
+	float t = b * b - 4.0 * c;
 	if(t > 0.0)
 	{
 		t0 = 0.5 * (-b - sqrt(t));
@@ -87,7 +68,7 @@ float sum(in vec3 pos)
 
 void interp(in vec3 pos, out vec3 N, out Material M)
 {
-	float 	 W = 0;
+	float 	 W = 0.0;
 	N 		   = vec3(0.0);
 	//M.KasdIOR  = vec4(0.0);
 	M.sr       = vec4(0.0);

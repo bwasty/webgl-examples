@@ -58,14 +58,17 @@ export class MetaballRenderer extends Renderer {
 
         const vert = new Shader(this._context, gl.VERTEX_SHADER, 'particle_draw_5.vert');
         vert.initialize(require('./particle_draw_5.vert'));
-        const frags = ['particle_draw_5_3.frag', 'metaballs.frag', 'cooktorrance.frag'].map((fileName) => {
-            const frag = new Shader(this._context, gl.FRAGMENT_SHADER, fileName);
-            frag.initialize(require('./' + fileName));
-            return frag;
-        });
 
+        const fragSource = [
+            require('./particle_draw_5_3.frag'),
+            require('./metaballs.frag'),
+            require('./cooktorrance.frag'),
+        ].join('\n');
+
+        const frag = new Shader(this._context, gl.FRAGMENT_SHADER, 'metaballs_combined.frag');
+        frag.initialize(fragSource);
         this._program = new Program(this._context);
-        this._program.initialize([vert, ...frags]);
+        this._program.initialize([vert, frag]);
 
         // Initialize camera
         this._camera = new Camera();

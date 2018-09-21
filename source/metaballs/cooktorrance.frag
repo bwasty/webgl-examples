@@ -2,17 +2,11 @@ precision mediump float;
 
 const float EPSILON  = 1e-6;
 
-struct Material
-{
-	vec4 sr; // vec3 specular, float reflectance
-	vec4 dr; // vec3 diffuse, float roughness
-};
-
 // Schlick's Approximation of the Fresnel Factor
 float fresnel(in float VdotH, in float r)
 {
 	// r: reflectance
-	return pow(1.0 - VdotH, 5) * (1 - r) + r;
+	return pow(1.0 - VdotH, 5.0) * (1.0 - r) + r;
 }
 
 // Beckmann's distribution for roughness
