@@ -1,16 +1,11 @@
 
 import {
-    Camera, Context, Invalidate, MouseEventProvider, Navigation, Program, Renderer,
-    Shader,
-    Texture2,
-    TextureCube,
-    vec3,
-    Wizard,
-    Framebuffer,
-    NdcFillingTriangle,
+    auxiliaries, Camera, Context, Framebuffer, Invalidate, MouseEventProvider, Navigation,
+    NdcFillingTriangle, Program, Renderer, Shader, Texture2, TextureCube, vec3, Wizard,
 } from 'webgl-operate';
 import { Skybox } from '../camera-navigation/skybox';
 
+const rand = auxiliaries.rand;
 
 export class MetaballRenderer extends Renderer {
     programParticleStep: Program;
@@ -42,7 +37,7 @@ export class MetaballRenderer extends Renderer {
     skyBox: Skybox;
     cubeMapChanged: boolean;
 
-    lastStepTimestamp: number;
+    elapsed: number;
 
     onUpdate(): boolean {
         // Update camera navigation (process events)
@@ -67,16 +62,28 @@ export class MetaballRenderer extends Renderer {
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
         gl.disable(gl.DEPTH_TEST);
 
-        this.programMetaballs.bind();
+        const time = performance.now()
+        const delta = time - this.elapsed;
+        this.elapsed = time;
+
+        this.step(delta * 10);
+
+        gl.enable(gl.DEPTH_TEST);
 
         // Render skybox
         this.skyBox.frame();
     }
 
-    step() {
-        const now = performance.now();
-        const delta = now - this.lastStepTimestamp;
-        this.lastStepTimestamp = now;
+    step(delta: number) {
+        const gl = this._context.gl;
+        this.positions.bind(0);
+        this.velocities.bind(1);
+        // TODO!
+        // this.forces.bind(2);
+
+        this.stepFBO.bind();
+
+        // TODO!!: continue
     }
 
     onSwap(): void {
@@ -91,6 +98,25 @@ export class MetaballRenderer extends Renderer {
         this.programBlurH = this.createProgram('particle_glow_5_4.vert', 'gaussh.frag');
         this.programBlurV = this.createProgram('particle_glow_5_4.vert', 'gaussv.frag');
         this.programGlow = this.createProgram('particle_glow_5_4.vert', 'particle_glow_5_4.frag');
+
+        // textures
+        this.positions = new Texture2(context);
+        this.velocities = new Texture2(context);
+        this.materials = [new Texture2(context), new Texture2(context)];
+
+        // fill buffers with data
+        this.reset();
+
+        // TODO: forces
+        this.color = new Texture2(context);
+        this.glows = [new Texture2(context), new Texture2(context)];
+
+        // frame buffers
+        this.stepFBO = new Framebuffer(context);
+        this.colorFBO = new Framebuffer(context);
+        this.glowFBO = new Framebuffer(context);
+
+        this.ndcTriangle = new NdcFillingTriangle(context);
 
         // Initialize camera
         this.camera = new Camera();
@@ -118,7 +144,7 @@ export class MetaballRenderer extends Renderer {
             positiveZ: 'data/env_cube_pz.png', negativeZ: 'data/env_cube_nz.png',
         }).then(() => this.invalidate(true));
 
-        this.lastStepTimestamp = performance.now();
+        this.elapsed = performance.now();
 
         return true;
     }
@@ -131,6 +157,75 @@ export class MetaballRenderer extends Renderer {
         const program = new Program(this._context);
         program.initialize([vert, frag]);
         return program;
+    }
+
+    reset() {
+        // Choose appropriate width and height for the current number of particles
+        const size = 16;
+        const width = Math.sqrt(size);
+        let height = width;
+        const remain = size - (height * width);
+        height += remain / width + (remain % width === 0 ? 0 : 1);
+
+        const rawPositions = new Float32Array(size * 4); // position + radius
+        const rawVelocities = new Float32Array(size * 4); // velocities + dummy (e.g. active)
+        const rawMaterials0 = new Float32Array(size * 4);
+        const rawMaterials1 = new Float32Array(size * 4);
+
+        for (let i = 0; i < size; ++i) {
+            rawPositions[i * 4 + 0] = rand(-2., 2.);
+            rawPositions[i * 4 + 1] = rand(-2., 2.);
+            rawPositions[i * 4 + 2] = rand(-2., 2.);
+            rawPositions[i * 4 + 3] = rand(0.4, 0.8);
+
+            rawVelocities[i * 4 + 0] = rand(-1., 1.);
+            rawVelocities[i * 4 + 1] = rand(-1., 1.);
+            rawVelocities[i * 4 + 2] = rand(-1., 1.);
+            rawVelocities[i * 4 + 3] = 0.;
+
+            const S = rand(0., 1.);
+
+            rawMaterials0[i * 4 + 0] = S;  // specular R
+            rawMaterials0[i * 4 + 1] = S;  // specular G
+            rawMaterials0[i * 4 + 2] = S;  // specular B
+            rawMaterials0[i * 4 + 3] = rand(0., 0.66);  // refrectence
+
+            rawMaterials1[i * 4 + 0] = rand(0., 1.);  // diffuse R
+            rawMaterials1[i * 4 + 1] = rand(0., 1.);  // diffuse G
+            rawMaterials1[i * 4 + 2] = rand(0., 1.);  // diffuse B
+            rawMaterials1[i * 4 + 3] = rand(0., 0.33);  // roughness
+        }
+
+        const gl = this._context.gl;
+
+        this.positions.initialize(width, height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.positions.data(rawPositions);
+
+        this.velocities.initialize(width, height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.velocities.data(rawVelocities);
+
+        this.materials[0].initialize(width, height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.materials[0].data(rawMaterials0);
+
+        this.materials[1].initialize(width, height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.materials[1].data(rawMaterials1);
+
+        // random fill forces
+        const fdimx = 5;
+        const fdimy = 5;
+        const fdimz = 5;
+
+        // this has center axes and allows for random rings etc..
+        const rawForces = new Float32Array(fdimx * fdimy * fdimz * 3);
+        for (let i = 0; i < fdimx * fdimy * fdimz; ++i) {
+            const f = vec3.fromValues(rand(-1, 1), rand(-1, 1), rand(-1, 1));
+            vec3.normalize(f, f);
+            rawForces[i * 3 + 0] = f[0];
+            rawForces[i * 3 + 1] = f[1];
+            rawForces[i * 3 + 2] = f[2];
+        }
+
+        // TODO!!: fill 3d texture...
     }
 
     onUninitialize(): void {

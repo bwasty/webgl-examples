@@ -2,7 +2,7 @@ uniform mat4 view;
 uniform mat4 projectionInverted;
 uniform mat4 viewProjectionInverted;
 
-in vec2 a_vertex;
+layout(location = 0) in vec2 a_vertex;
 
 out vec2 v_uv;
 out vec3 v_ray;

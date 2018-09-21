@@ -1,4 +1,4 @@
-in vec2 a_vertex;
+layout(location = 0) in vec2 a_vertex;
 
 void main()
 {
