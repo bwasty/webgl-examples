@@ -10,7 +10,11 @@ import { Skybox } from '../camera-navigation/skybox';
 
 
 export class MetaballRenderer extends Renderer {
-    protected _program: Program;
+    protected _programParticleStep: Program;
+    protected _programMetaballs: Program;
+    protected _programBlurH: Program;
+    protected _programBlurV: Program;
+    protected _programGlow: Program;
 
     // Camera and navigation
     protected _camera: Camera;
@@ -20,6 +24,8 @@ export class MetaballRenderer extends Renderer {
     protected _cubeMap: TextureCube;
     protected _skyBox: Skybox;
     protected _cubeMapChanged: boolean;
+
+    protected _lastStepTimestamp: number;
 
     protected onUpdate(): boolean {
         // Update camera navigation (process events)
@@ -43,10 +49,19 @@ export class MetaballRenderer extends Renderer {
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
-        // this._program.bind();
+        ///
+        gl.disable(gl.DEPTH_TEST);
+
+        this._programMetaballs.bind();
 
         // Render skybox
         this._skyBox.frame();
+    }
+
+    protected step() {
+        const now = performance.now();
+        const delta = now - this._lastStepTimestamp;
+        this._lastStepTimestamp = now;
     }
 
     protected onSwap(): void {
@@ -56,19 +71,11 @@ export class MetaballRenderer extends Renderer {
     protected onInitialize(context: Context, callback: Invalidate, mouseEventProvider: MouseEventProvider): boolean {
         const gl = this._context.gl;
 
-        const vert = new Shader(this._context, gl.VERTEX_SHADER, 'particle_draw_5.vert');
-        vert.initialize(require('./particle_draw_5.vert'));
-
-        const fragSource = [
-            require('./particle_draw_5_3.frag'),
-            require('./metaballs.frag'),
-            require('./cooktorrance.frag'),
-        ].join('\n');
-
-        const frag = new Shader(this._context, gl.FRAGMENT_SHADER, 'metaballs_combined.frag');
-        frag.initialize(fragSource);
-        this._program = new Program(this._context);
-        this._program.initialize([vert, frag]);
+        this._programParticleStep = this.createProgram('particle_step.vert', 'particle_step.frag');
+        this._programMetaballs = this.createProgram('particle_draw_5.vert', 'particle_draw_5_3.frag');
+        this._programBlurH = this.createProgram('particle_glow_5_4.vert', 'gaussh.frag');
+        this._programBlurV = this.createProgram('particle_glow_5_4.vert', 'gaussv.frag');
+        this._programGlow = this.createProgram('particle_glow_5_4.vert', 'particle_glow_5_4.frag');
 
         // Initialize camera
         this._camera = new Camera();
@@ -96,7 +103,19 @@ export class MetaballRenderer extends Renderer {
             positiveZ: 'data/env_cube_pz.png', negativeZ: 'data/env_cube_nz.png',
         }).then(() => this.invalidate(true));
 
+        this._lastStepTimestamp = performance.now();
+
         return true;
+    }
+
+    protected createProgram(vertexFile: string, fragmentFile: string): Program {
+        const vert = new Shader(this._context, WebGLRenderingContext.VERTEX_SHADER, vertexFile);
+        vert.initialize(require('./' + vertexFile));
+        const frag = new Shader(this._context, WebGLRenderingContext.FRAGMENT_SHADER, fragmentFile);
+        frag.initialize(require('./' + fragmentFile));
+        const program = new Program(this._context);
+        program.initialize([vert, frag]);
+        return program;
     }
 
     protected onUninitialize(): void {

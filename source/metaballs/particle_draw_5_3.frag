@@ -31,14 +31,11 @@ struct Material
 	vec4 dr; // vec3 diffuse, float roughness
 };
 
+@import ./metaballs;
+@import ./cooktorrance;
+
 const vec3 light = normalize(vec3(1.0, 0.0, -1.0));
 const vec3 ambient = vec3(0.3725, 0.3686, 0.4314);
-
-
-void cache(sampler2D positions, sampler2D materials0, sampler2D materials1);
-bool trace(in Ray ray, out vec3 normal, out Material material, out float t);
-vec3 CookTorrance(in vec3 V, in vec3 N, in vec3 L, in Material m, in vec3 R, in vec3 ambient);
-
 
 void main()
 {
