@@ -11,8 +11,7 @@ function onload() {
     const renderer = new MetaballRenderer();
     canvas.renderer = renderer;
 
-    canvas.element.addEventListener('click', () => { gloperate.viewer.Fullscreen.toggle(canvas.element); });
-    canvas.element.addEventListener('touchstart', () => { gloperate.viewer.Fullscreen.toggle(canvas.element); });
+    canvas.element.addEventListener('dblclick', () => { gloperate.viewer.Fullscreen.toggle(canvas.element); });
 
     // export variables
     (window as any)['canvas'] = canvas;
