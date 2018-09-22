@@ -1,11 +1,16 @@
 
 import {
     auxiliaries, Camera, Context, Framebuffer, Invalidate, MouseEventProvider, Navigation,
-    NdcFillingTriangle, Program, Renderer, Shader, Texture2, TextureCube, vec3, Wizard, Renderbuffer,
+    NdcFillingTriangle, Program, Renderbuffer, Renderer, Shader, Texture2, Texture3, TextureCube, vec3, Wizard,
 } from 'webgl-operate';
 import { Skybox } from '../camera-navigation/skybox';
 
 const rand = auxiliaries.rand;
+
+// 'force' 3D texture dimensions
+const fdimx = 5;
+const fdimy = 5;
+const fdimz = 5;
 
 export class MetaballRenderer extends Renderer {
     programParticleStep: Program;
@@ -17,7 +22,7 @@ export class MetaballRenderer extends Renderer {
     positions: Texture2;
     velocities: Texture2;
     materials: [Texture2, Texture2];
-    // forces: Texture3;
+    forces: Texture3;
     color: Texture2;
     glows: [Texture2, Texture2];
 
@@ -42,6 +47,8 @@ export class MetaballRenderer extends Renderer {
     height: number;
 
     elapsed: number;
+
+    u_elapsed: WebGLUniformLocation | null;
 
     onUpdate(): boolean {
         // Update camera navigation (process events)
@@ -80,14 +87,21 @@ export class MetaballRenderer extends Renderer {
 
     step(delta: number) {
         const gl = this._context.gl;
+        const gl2facade = this._context.gl2facade;
         this.positions.bind(gl.TEXTURE0);
         this.velocities.bind(gl.TEXTURE1);
-        // TODO!
-        // this.forces.bind(2);
+        this.forces.bind(gl.TEXTURE2);
 
         this.stepFBO.bind();
+        gl2facade.drawBuffers!([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
 
-        // TODO!!: continue
+        this.programParticleStep.bind();
+        gl.uniform1f(this.u_elapsed, delta);
+
+        gl.viewport(0, 0, this.width, this.height);
+        this.ndcTriangle.draw();
+        gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
+        // gl2facade.drawBuffers!([gl.BACK]); // -> invalid operation
     }
 
     onSwap(): void {
@@ -99,6 +113,7 @@ export class MetaballRenderer extends Renderer {
         const gl2facade = context.gl2facade;
 
         this.programParticleStep = this.createProgram('particle_step.vert', 'particle_step.frag');
+        this.u_elapsed = this.programParticleStep.uniform('elapsed');
         this.programMetaballs = this.createProgram('particle_draw_5.vert', 'particle_draw_5_3.frag');
         this.programBlurH = this.createProgram('particle_glow_5_4.vert', 'gaussh.frag');
         this.programBlurV = this.createProgram('particle_glow_5_4.vert', 'gaussv.frag');
@@ -131,7 +146,10 @@ export class MetaballRenderer extends Renderer {
         this.materials[1].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT)
         setFilterWrap(this.materials[1]);
 
-        // TODO!: forces
+        this.forces = new Texture3(context);
+        this.forces.initialize(fdimx, fdimy, fdimz, gl.RGB32F, gl.RGB, gl.FLOAT);
+        this.forces.filter(gl.LINEAR, gl.LINEAR, true, false);
+        this.forces.wrap(gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE, false, true);
 
         // fill buffers with data
         this.reset();
@@ -162,6 +180,7 @@ export class MetaballRenderer extends Renderer {
         this.glowFBO = new Framebuffer(context);
 
         this.ndcTriangle = new NdcFillingTriangle(context);
+        this.ndcTriangle.initialize(0);
 
         // Initialize camera
         this.camera = new Camera();
@@ -234,17 +253,12 @@ export class MetaballRenderer extends Renderer {
             rawMaterials1[i * 4 + 3] = rand(0., 0.33);  // roughness
         }
 
-        const gl = this._context.gl;
-
         this.positions.data(rawPositions);
         this.velocities.data(rawVelocities);
         this.materials[0].data(rawMaterials0);
         this.materials[1].data(rawMaterials1);
 
         // random fill forces
-        const fdimx = 5;
-        const fdimy = 5;
-        const fdimz = 5;
 
         // this has center axes and allows for random rings etc..
         const rawForces = new Float32Array(fdimx * fdimy * fdimz * 3);
@@ -256,7 +270,7 @@ export class MetaballRenderer extends Renderer {
             rawForces[i * 3 + 2] = f[2];
         }
 
-        // TODO!!: fill 3d texture...
+        this.forces.data(rawForces);
     }
 
     onUninitialize(): void {
