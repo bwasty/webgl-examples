@@ -19,14 +19,17 @@ export class MetaballRenderer extends Renderer {
     programBlurV: Program;
     programGlow: Program;
 
-    positions: Texture2;
-    velocities: Texture2;
+    positions: [Texture2, Texture2];
+    velocities: [Texture2, Texture2];
+    srcIndex = 0;
+    dstIndex = 1;
+
     materials: [Texture2, Texture2];
     forces: Texture3;
     color: Texture2;
     glows: [Texture2, Texture2];
 
-    stepFBO: Framebuffer;
+    stepFBOs: [Framebuffer, Framebuffer];
     colorFBO: Framebuffer;
     glowFBO: Framebuffer;
     depthRenderbuffer: Renderbuffer;
@@ -48,7 +51,10 @@ export class MetaballRenderer extends Renderer {
 
     elapsed: number;
 
-    u_elapsed: WebGLUniformLocation | null;
+    uElapsed: WebGLUniformLocation | null;
+    uPositions: WebGLUniformLocation | null;
+    uVelocities: WebGLUniformLocation | null;
+    uForces: WebGLUniformLocation | null;
 
     onUpdate(): boolean {
         // Update camera navigation (process events)
@@ -88,20 +94,23 @@ export class MetaballRenderer extends Renderer {
     step(delta: number) {
         const gl = this._context.gl;
         const gl2facade = this._context.gl2facade;
-        this.positions.bind(gl.TEXTURE0);
-        this.velocities.bind(gl.TEXTURE1);
+        this.positions[this.srcIndex].bind(gl.TEXTURE0);
+        this.velocities[this.srcIndex].bind(gl.TEXTURE1);
         this.forces.bind(gl.TEXTURE2);
 
-        this.stepFBO.bind();
+        this.stepFBOs[this.dstIndex].bind();
         gl2facade.drawBuffers!([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
 
         this.programParticleStep.bind();
-        gl.uniform1f(this.u_elapsed, delta);
+        gl.uniform1f(this.uElapsed, delta);
 
         gl.viewport(0, 0, this.width, this.height);
         this.ndcTriangle.draw();
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
         // gl2facade.drawBuffers!([gl.BACK]); // -> invalid operation
+
+        this.srcIndex = this.dstIndex;
+        this.dstIndex = this.srcIndex === 0 ? 1 : 0;
     }
 
     onSwap(): void {
@@ -113,7 +122,15 @@ export class MetaballRenderer extends Renderer {
         const gl2facade = context.gl2facade;
 
         this.programParticleStep = this.createProgram('particle_step.vert', 'particle_step.frag');
-        this.u_elapsed = this.programParticleStep.uniform('elapsed');
+        this.programParticleStep.bind()
+        this.uElapsed = this.programParticleStep.uniform('elapsed');
+        this.uPositions = this.programParticleStep.uniform('positions');
+        gl.uniform1i(this.uPositions, 0);
+        this.uVelocities = this.programParticleStep.uniform('velocities');
+        gl.uniform1i(this.uVelocities, 1);
+        this.uForces = this.programParticleStep.uniform('forces');
+        gl.uniform1i(this.uForces, 2);
+
         this.programMetaballs = this.createProgram('particle_draw_5.vert', 'particle_draw_5_3.frag');
         this.programBlurH = this.createProgram('particle_glow_5_4.vert', 'gaussh.frag');
         this.programBlurV = this.createProgram('particle_glow_5_4.vert', 'gaussv.frag');
@@ -132,13 +149,17 @@ export class MetaballRenderer extends Renderer {
             tex.filter(filter, filter, true, false);
             tex.wrap(wrap, wrap, false, true);
         };
-        this.positions = new Texture2(context);
-        this.positions.initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
-        setFilterWrap(this.positions);
+        this.positions = [new Texture2(context), new Texture2(context)];
+        this.positions[0].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.positions[1].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        setFilterWrap(this.positions[0]);
+        setFilterWrap(this.positions[1]);
 
-        this.velocities = new Texture2(context);
-        this.velocities.initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
-        setFilterWrap(this.velocities);
+        this.velocities = [new Texture2(context), new Texture2(context)];
+        this.velocities[0].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.velocities[1].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        setFilterWrap(this.velocities[0]);
+        setFilterWrap(this.velocities[1]);
 
         this.materials = [new Texture2(context), new Texture2(context)];
         this.materials[0].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT)
@@ -170,12 +191,12 @@ export class MetaballRenderer extends Renderer {
         this.depthRenderbuffer.initialize(this.width, this.height, gl.DEPTH_COMPONENT16);
 
         // frame buffers
-        this.stepFBO = new Framebuffer(context);
-        this.stepFBO.initialize([
-            [gl2facade.COLOR_ATTACHMENT0, this.positions],
-            [gl2facade.COLOR_ATTACHMENT1, this.velocities],
-            [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer]
-        ]);
+        this.stepFBOs = [new Framebuffer(context), new Framebuffer(context)];
+        this.stepFBOs.forEach((fbo, i) => fbo.initialize([
+            [gl2facade.COLOR_ATTACHMENT0, this.positions[i]],
+            [gl2facade.COLOR_ATTACHMENT1, this.velocities[i]],
+            [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer],
+        ]));
         this.colorFBO = new Framebuffer(context);
         this.glowFBO = new Framebuffer(context);
 
@@ -253,8 +274,8 @@ export class MetaballRenderer extends Renderer {
             rawMaterials1[i * 4 + 3] = rand(0., 0.33);  // roughness
         }
 
-        this.positions.data(rawPositions);
-        this.velocities.data(rawVelocities);
+        this.positions[this.srcIndex].data(rawPositions);
+        this.velocities[this.srcIndex].data(rawVelocities);
         this.materials[0].data(rawMaterials0);
         this.materials[1].data(rawMaterials1);
 
