@@ -75,15 +75,23 @@ export class MetaballRenderer extends Renderer {
 
     onFrame(frameNumber: number): void {
         const gl = this.context.gl;
+        const gl2facade = this.context.gl2facade;
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
         gl.disable(gl.DEPTH_TEST);
 
-        const time = performance.now()
+        const time = performance.now();
         const delta = time - this.elapsed;
         this.elapsed = time;
 
         this.step(delta * 10);
+
+        this.colorFBO.bind();
+        gl.drawBuffers([gl2facade.COLOR_ATTACHMENT0]);
+        this.draw(time);
+        this.colorFBO.unbind();
+
+        // TODO!: glow
 
         gl.enable(gl.DEPTH_TEST);
 
@@ -111,6 +119,18 @@ export class MetaballRenderer extends Renderer {
 
         this.srcIndex = this.dstIndex;
         this.dstIndex = this.srcIndex === 0 ? 1 : 0;
+    }
+
+    draw(time: number) {
+        const gl = this._context.gl;
+
+        this.positions[this.srcIndex].bind(gl.TEXTURE0);
+        this.materials[0].bind(gl.TEXTURE1);
+        this.materials[1].bind(gl.TEXTURE2);
+        this.cubeMap.bind(gl.TEXTURE3);
+
+        this.programMetaballs.bind();
+        this.ndcTriangle.draw();
     }
 
     onSwap(): void {
@@ -175,13 +195,15 @@ export class MetaballRenderer extends Renderer {
         // fill buffers with data
         this.reset();
 
+        const [width, height] = this._frameSize;
+
         this.color = new Texture2(context);
-        this.color.initialize(1, 1, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+        this.color.initialize(width, height, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
         setFilterWrap(this.color, gl.LINEAR);
 
         this.glows = [new Texture2(context), new Texture2(context)];
         this.glows.forEach((tex) => {
-            tex.initialize(1, 1, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+            tex.initialize(width, height, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
             setFilterWrap(tex, gl.LINEAR);
         });
 
@@ -198,7 +220,16 @@ export class MetaballRenderer extends Renderer {
             [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer],
         ]));
         this.colorFBO = new Framebuffer(context);
+        this.colorFBO.initialize([
+            [gl2facade.COLOR_ATTACHMENT0, this.color],
+            [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer],
+        ]);
         this.glowFBO = new Framebuffer(context);
+        this.glowFBO.initialize([
+            [gl2facade.COLOR_ATTACHMENT0, this.glows[0]],
+            [gl2facade.COLOR_ATTACHMENT1, this.glows[1]],
+            [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer],
+        ]);
 
         this.ndcTriangle = new NdcFillingTriangle(context);
         this.ndcTriangle.initialize(0);
