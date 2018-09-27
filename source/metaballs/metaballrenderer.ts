@@ -45,9 +45,9 @@ export class MetaballRenderer extends Renderer {
     skyBox: Skybox;
     cubeMapChanged: boolean;
 
-    size: number;
-    width: number;
-    height: number;
+    simulationSize: number;
+    simulationWidth: number;
+    simulationHeight: number;
 
     elapsed: number;
 
@@ -57,6 +57,16 @@ export class MetaballRenderer extends Renderer {
     uForces: WebGLUniformLocation | null;
 
     onUpdate(): boolean {
+        if (this._altered.frameSize) {
+            const [width, height] = this._frameSize;
+            console.log('new frameSize:', width, height);
+            this.color.resize(width, height);
+            this.glows[0].resize(width, height);
+            this.glows[1].resize(width, height);
+
+            this.camera.viewport = [width, height];
+        }
+
         // Update camera navigation (process events)
         this.navigation.update();
 
@@ -91,12 +101,12 @@ export class MetaballRenderer extends Renderer {
         this.draw(time);
         this.colorFBO.unbind();
 
-        // TODO!: glow
+        this.glow(time);
 
         gl.enable(gl.DEPTH_TEST);
 
         // Render skybox
-        this.skyBox.frame();
+        // this.skyBox.frame();
     }
 
     step(delta: number) {
@@ -112,7 +122,7 @@ export class MetaballRenderer extends Renderer {
         this.programParticleStep.bind();
         gl.uniform1f(this.uElapsed, delta);
 
-        gl.viewport(0, 0, this.width, this.height);
+        gl.viewport(0, 0, this.simulationWidth, this.simulationHeight);
         this.ndcTriangle.draw();
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
         // gl2facade.drawBuffers!([gl.BACK]); // -> invalid operation
@@ -130,6 +140,34 @@ export class MetaballRenderer extends Renderer {
         this.cubeMap.bind(gl.TEXTURE3);
 
         this.programMetaballs.bind();
+        this.ndcTriangle.draw();
+    }
+
+    glow(time: number) {
+        const gl = this._context.gl;
+        const gl2facade = this._context.gl2facade;
+
+        this.color.bind(gl.TEXTURE0);
+        this.glowFBO.bind();
+        gl.drawBuffers([gl2facade.COLOR_ATTACHMENT0]);
+
+        gl.viewport(0, 0, this._frameSize[0] / 2, this._frameSize[1] / 2);
+        this.programBlurH.bind();
+        this.ndcTriangle.draw();
+
+        this.glows[0].bind();
+        gl.drawBuffers([gl2facade.COLOR_ATTACHMENT1]);
+
+        this.programBlurV.bind();
+        this.ndcTriangle.draw();
+
+        this.glowFBO.unbind();
+
+        this.color.bind();
+        this.glows[1].bind(gl.TEXTURE1);
+
+        gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
+        this.programGlow.bind();
         this.ndcTriangle.draw();
     }
 
@@ -159,58 +197,56 @@ export class MetaballRenderer extends Renderer {
         // textures
 
         // Choose appropriate width and height for the current number of particles
-        this.size = 16;
-        this.width = Math.sqrt(this.size);
-        this.height = this.width;
-        const remain = this.size - (this.height * this.width);
-        this.height += remain / this.width + (remain % this.width === 0 ? 0 : 1);
+        this.simulationSize = 16;
+        this.simulationWidth = Math.sqrt(this.simulationSize);
+        this.simulationHeight = this.simulationWidth;
+        const remain = this.simulationSize - (this.simulationHeight * this.simulationWidth);
+        this.simulationHeight += remain / this.simulationWidth + (remain % this.simulationWidth === 0 ? 0 : 1);
 
         const setFilterWrap = (tex: Texture2, filter = gl.NEAREST, wrap = gl.CLAMP_TO_EDGE) => {
             tex.filter(filter, filter, true, false);
             tex.wrap(wrap, wrap, false, true);
         };
         this.positions = [new Texture2(context), new Texture2(context)];
-        this.positions[0].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
-        this.positions[1].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.positions[0].initialize(this.simulationWidth, this.simulationHeight, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.positions[1].initialize(this.simulationWidth, this.simulationHeight, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         setFilterWrap(this.positions[0]);
         setFilterWrap(this.positions[1]);
 
         this.velocities = [new Texture2(context), new Texture2(context)];
-        this.velocities[0].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
-        this.velocities[1].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.velocities[0].initialize(this.simulationWidth, this.simulationHeight, gl.RGBA32F, gl.RGBA, gl.FLOAT);
+        this.velocities[1].initialize(this.simulationWidth, this.simulationHeight, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         setFilterWrap(this.velocities[0]);
         setFilterWrap(this.velocities[1]);
 
         this.materials = [new Texture2(context), new Texture2(context)];
-        this.materials[0].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT)
+        this.materials[0].initialize(this.simulationWidth, this.simulationHeight, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         setFilterWrap(this.materials[0]);
-        this.materials[1].initialize(this.width, this.height, gl.RGBA32F, gl.RGBA, gl.FLOAT)
+        this.materials[1].initialize(this.simulationWidth, this.simulationHeight, gl.RGBA32F, gl.RGBA, gl.FLOAT);
         setFilterWrap(this.materials[1]);
 
         this.forces = new Texture3(context);
         this.forces.initialize(fdimx, fdimy, fdimz, gl.RGB32F, gl.RGB, gl.FLOAT);
-        this.forces.filter(gl.LINEAR, gl.LINEAR, true, false);
+        this.forces.filter(gl.NEAREST, gl.NEAREST, true, false); // TODO?: was linear in C++, but that 'not renderable'
         this.forces.wrap(gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE, false, true);
 
         // fill buffers with data
         this.reset();
 
-        const [width, height] = this._frameSize;
-
         this.color = new Texture2(context);
-        this.color.initialize(width, height, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+        this.color.initialize(this.simulationWidth, this.simulationHeight, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
         setFilterWrap(this.color, gl.LINEAR);
 
         this.glows = [new Texture2(context), new Texture2(context)];
         this.glows.forEach((tex) => {
-            tex.initialize(width, height, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+            tex.initialize(this.simulationWidth, this.simulationHeight, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
             setFilterWrap(tex, gl.LINEAR);
         });
 
         // create write access to buffers
 
         this.depthRenderbuffer = new Renderbuffer(context);
-        this.depthRenderbuffer.initialize(this.width, this.height, gl.DEPTH_COMPONENT16);
+        this.depthRenderbuffer.initialize(this.simulationWidth, this.simulationHeight, gl.DEPTH_COMPONENT16);
 
         // frame buffers
         this.stepFBOs = [new Framebuffer(context), new Framebuffer(context)];
@@ -276,12 +312,12 @@ export class MetaballRenderer extends Renderer {
     }
 
     reset() {
-        const rawPositions = new Float32Array(this.size * 4); // position + radius
-        const rawVelocities = new Float32Array(this.size * 4); // velocities + dummy (e.g. active)
-        const rawMaterials0 = new Float32Array(this.size * 4);
-        const rawMaterials1 = new Float32Array(this.size * 4);
+        const rawPositions = new Float32Array(this.simulationSize * 4); // position + radius
+        const rawVelocities = new Float32Array(this.simulationSize * 4); // velocities + dummy (e.g. active)
+        const rawMaterials0 = new Float32Array(this.simulationSize * 4);
+        const rawMaterials1 = new Float32Array(this.simulationSize * 4);
 
-        for (let i = 0; i < this.size; ++i) {
+        for (let i = 0; i < this.simulationSize; ++i) {
             rawPositions[i * 4 + 0] = rand(-2., 2.);
             rawPositions[i * 4 + 1] = rand(-2., 2.);
             rawPositions[i * 4 + 2] = rand(-2., 2.);
