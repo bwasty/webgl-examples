@@ -32,6 +32,7 @@ export class MetaballRenderer extends Renderer {
     stepFBOs: [Framebuffer, Framebuffer];
     colorFBO: Framebuffer;
     glowFBO: Framebuffer;
+    depthRenderbufferSimulation: Renderbuffer;
     depthRenderbuffer: Renderbuffer;
 
     ndcTriangle: NdcFillingTriangle;
@@ -56,13 +57,16 @@ export class MetaballRenderer extends Renderer {
     uVelocities: WebGLUniformLocation | null;
     uForces: WebGLUniformLocation | null;
 
+    frameCount = 0;
+
     onUpdate(): boolean {
         if (this._altered.frameSize) {
             const [width, height] = this._frameSize;
-            console.log('new frameSize:', width, height);
-            this.color.resize(width, height);
-            this.glows[0].resize(width, height);
-            this.glows[1].resize(width, height);
+            // this.color.resize(width, height);
+            this.colorFBO.resize(width, height);
+            // this.glows[0].resize(width, height);
+            // this.glows[1].resize(width, height);
+            this.glowFBO.resize(width, height);
 
             this.camera.viewport = [width, height];
         }
@@ -78,6 +82,7 @@ export class MetaballRenderer extends Renderer {
 
         // If anything has changed, render a new frame
         return altered;
+        // return true;
     }
 
     onPrepare(): void {
@@ -96,17 +101,19 @@ export class MetaballRenderer extends Renderer {
 
         this.step(delta * 10);
 
-        this.colorFBO.bind();
-        gl.drawBuffers([gl2facade.COLOR_ATTACHMENT0]);
+        // this.colorFBO.bind();
+        // gl.drawBuffers([gl2facade.COLOR_ATTACHMENT0]);
         this.draw(time);
-        this.colorFBO.unbind();
+        // this.colorFBO.unbind();
 
-        this.glow(time);
+        // this.glow(time);
 
         gl.enable(gl.DEPTH_TEST);
 
         // Render skybox
         // this.skyBox.frame();
+
+        this.frameCount++;
     }
 
     step(delta: number) {
@@ -125,7 +132,9 @@ export class MetaballRenderer extends Renderer {
         gl.viewport(0, 0, this.simulationWidth, this.simulationHeight);
         this.ndcTriangle.draw();
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
-        // gl2facade.drawBuffers!([gl.BACK]); // -> invalid operation
+        // gl2facade.drawBuffers!([gl.BACK]); // -> invalid operation for BACK
+
+        this.stepFBOs[this.dstIndex].unbind();
 
         this.srcIndex = this.dstIndex;
         this.dstIndex = this.srcIndex === 0 ? 1 : 0;
@@ -133,11 +142,15 @@ export class MetaballRenderer extends Renderer {
 
     draw(time: number) {
         const gl = this._context.gl;
+        // gl.clearColor(0, 1, 0, 1);
+        // gl.clear(gl.COLOR_BUFFER_BIT);
 
         this.positions[this.srcIndex].bind(gl.TEXTURE0);
         this.materials[0].bind(gl.TEXTURE1);
         this.materials[1].bind(gl.TEXTURE2);
         this.cubeMap.bind(gl.TEXTURE3);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
         this.programMetaballs.bind();
         this.ndcTriangle.draw();
@@ -145,18 +158,17 @@ export class MetaballRenderer extends Renderer {
 
     glow(time: number) {
         const gl = this._context.gl;
-        const gl2facade = this._context.gl2facade;
 
         this.color.bind(gl.TEXTURE0);
         this.glowFBO.bind();
-        gl.drawBuffers([gl2facade.COLOR_ATTACHMENT0]);
+        gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
 
         gl.viewport(0, 0, this._frameSize[0] / 2, this._frameSize[1] / 2);
         this.programBlurH.bind();
         this.ndcTriangle.draw();
 
         this.glows[0].bind();
-        gl.drawBuffers([gl2facade.COLOR_ATTACHMENT1]);
+        gl.drawBuffers([gl.NONE, gl.COLOR_ATTACHMENT1]);
 
         this.programBlurV.bind();
         this.ndcTriangle.draw();
@@ -172,6 +184,7 @@ export class MetaballRenderer extends Renderer {
     }
 
     onSwap(): void {
+        this.invalidate();
     }
 
 
@@ -253,7 +266,7 @@ export class MetaballRenderer extends Renderer {
         this.stepFBOs.forEach((fbo, i) => fbo.initialize([
             [gl2facade.COLOR_ATTACHMENT0, this.positions[i]],
             [gl2facade.COLOR_ATTACHMENT1, this.velocities[i]],
-            [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer],
+            // [gl.DEPTH_ATTACHMENT, this.depthRenderbuffer],
         ]));
         this.colorFBO = new Framebuffer(context);
         this.colorFBO.initialize([
