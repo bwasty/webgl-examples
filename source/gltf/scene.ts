@@ -35,16 +35,15 @@ export class Scene {
         }));
 
         // propagate transforms
-        const rootTransform = mat4.create(); // identity
         for (const node of scene.rootNodes) {
-            node.updateTransform(rootTransform);
+            node.updateTransform();
             node.updateBounds();
             scene.bounds.union(node.bounds);
         }
 
         // gather all nodes
         for (const rootNode of scene.rootNodes) {
-            scene.nodes.push(rootNode);
+            // scene.nodes.push(rootNode);
             const stack = [rootNode];
             while (stack.length > 0) {
                 const node = stack.pop()!;
@@ -72,12 +71,40 @@ export class Scene {
         return scene;
     }
 
+    addNodes(nodes: Node[], parent?: Node) {
+        // add within the hierarchy
+        if (parent) {
+            nodes.forEach((node) => node.parent = parent);
+            parent.children.push(...nodes);
+        } else {
+            this.rootNodes.push(...nodes);
+        }
+
+        // add to the scene's flat array of nodes
+        const stack = [...nodes];
+        while (stack.length > 0) {
+            const node = stack.pop()!;
+            this.nodes.push(node);
+            stack.push.apply(stack, node.children);
+        }
+
+        // update transforms and bounds
+        for (const node of nodes) {
+            node.updateTransform();
+            node.updateBounds();
+            this.bounds.union(node.bounds);
+        }
+    }
+
     draw(shader: PbrShader, renderViews?: RenderView[]) {
         const gl = this.context.gl;
         for (const material of this.sortedMaterials) {
             const batches = this.batchesByMaterial.get(material)!;
             material.bind(shader);
             for (const { primitive, node } of batches) {
+                if (!node.visible) {
+                    return;
+                }
                 gl.uniformMatrix4fv(shader.uniforms.u_ModelMatrix, gl.FALSE, node.finalTransform);
                 gl.uniformMatrix3fv(shader.uniforms.u_NormalMatrix, gl.FALSE, node.normalMatrix);
                 primitive.draw(shader, renderViews);

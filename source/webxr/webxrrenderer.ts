@@ -3,6 +3,7 @@ import { Camera, Context, FrameData, Invalidate, MouseEventProvider, Navigation,
 
 import { PbrShader } from '../gltf/pbrshader';
 import { Scene } from '../gltf/scene';
+import { InputDevice } from './inputdevice';
 
 export class WebXRRenderer extends XRRenderer {
     private frameCount = 0;
@@ -12,6 +13,8 @@ export class WebXRRenderer extends XRRenderer {
     // Camera and navigation
     protected _camera: Camera;
     protected _navigation: Navigation;
+
+    protected inputDevices: { [hand: string]: InputDevice; } = {};
 
     protected _scene: Scene;
     set scene(scene: Scene) {
@@ -113,6 +116,22 @@ export class WebXRRenderer extends XRRenderer {
 
         if (!this._scene) {
             return;
+        }
+
+        for (const inputData of frameData.inputData) {
+            if (inputData.source.targetRayMode !== 'tracked-pointer') {
+                continue; // nothing to render for gaze/screen
+            }
+
+            const hand = inputData.source.handedness;
+            let device = this.inputDevices[hand];
+            if (!device) {
+                device = new InputDevice(inputData.source.handedness);
+                this.inputDevices[hand] = device;
+                // TODO!!: add to scene...via device constructor?
+            }
+
+            device.update(inputData);
         }
 
         this.pbrShader.bind();

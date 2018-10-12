@@ -1,15 +1,15 @@
 import { mat3, mat4, quat, vec3 } from 'gl-matrix';
 import { gltf as GLTF } from 'gltf-loader-ts';
-import { Camera, Context, Program } from 'webgl-operate';
+import { Context } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
 import { Mesh } from './mesh';
-import { PbrShader } from './pbrshader';
 
 export class Node {
     context: Context;
     mesh: Mesh | undefined;
+    parent: Node | undefined;
     children: Node[] = [];
 
     // a node can either have a matrix, or T,R,S properties
@@ -26,7 +26,9 @@ export class Node {
     normalMatrix: mat3 = mat3.create();
     bounds: Aabb3;
 
-    static async fromGltf(gNode: GLTF.Node, asset: Asset): Promise<Node> {
+    visible = true;
+
+    static async fromGltf(gNode: GLTF.Node, asset: Asset, parent?: Node): Promise<Node> {
         const node = new Node();
         node.name = gNode.name;
         node.context = asset.context;
@@ -55,9 +57,10 @@ export class Node {
             node.mesh = await asset.getMesh(gNode.mesh);
         }
 
+        node.parent = parent;
         if (gNode.children) {
             node.children = await Promise.all(gNode.children.map((i) => {
-                return Node.fromGltf(asset.gAsset.gltf.nodes![i], asset);
+                return Node.fromGltf(asset.gAsset.gltf.nodes![i], asset, node);
             }));
         }
 
@@ -66,8 +69,8 @@ export class Node {
         return node;
     }
 
-    updateTransform(parentTransform: mat4) {
-        this.finalTransform = mat4.clone(parentTransform);
+    updateTransform() {
+        this.finalTransform = this.parent ? mat4.clone(this.parent.finalTransform) : mat4.create();
 
         if (this.matrix) {
             mat4.mul(this.finalTransform, this.finalTransform, this.matrix);
@@ -79,7 +82,7 @@ export class Node {
         mat3.normalFromMat4(this.normalMatrix, this.finalTransform);
 
         for (const node of this.children) {
-            node.updateTransform(this.finalTransform);
+            node.updateTransform();
         }
     }
 
