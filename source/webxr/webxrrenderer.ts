@@ -1,7 +1,6 @@
 import { vec3 } from 'gl-matrix';
-import { Camera, Context, Invalidate, MouseEventProvider, Navigation, XRRenderer, RenderView, FrameData } from 'webgl-operate';
+import { Camera, Context, FrameData, Invalidate, MouseEventProvider, Navigation, XRRenderer } from 'webgl-operate';
 
-import { XRInputPose } from 'webgl-operate/lib/webxr';
 import { PbrShader } from '../gltf/pbrshader';
 import { Scene } from '../gltf/scene';
 
