@@ -1,6 +1,5 @@
-import { mat4 } from 'gl-matrix';
 import { gltf as GLTF } from 'gltf-loader-ts';
-import { Camera, Context, RenderView } from 'webgl-operate';
+import { Context, RenderView } from 'webgl-operate';
 
 import { Aabb3 } from './aabb3';
 import { Asset } from './asset';
@@ -94,6 +93,8 @@ export class Scene {
             node.updateBounds();
             this.bounds.union(node.bounds);
         }
+
+        // TODO!?: gather primitives by material for batched drawing
     }
 
     draw(shader: PbrShader, renderViews?: RenderView[]) {
